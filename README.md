@@ -1,3 +1,13 @@
+> **This fork: Fiberly**, an assistant that answers fibre (FTTH) questions for internal
+> operators at Hrvatski Telekom. My work for the certification lives in [`use_case/`](use_case/)
+> and in each week's `challenge/`. All data in this repo is invented.
+>
+> | Week | Status | Start here |
+> | --- | --- | --- |
+> | 1 · Product engineering | ✅ submitted | [Submission](01_Product_Engineering/challenge/SUBMISSION.md) · [Charter](use_case/CHARTER.md) · [Goldens](use_case/evals/golden.jsonl) · [Video](https://github.com/leonardokristof/mavenfde/releases/tag/week-1) |
+
+---
+
 <div align="center">
   <img
     src="https://github.com/AI-Maker-Space/LLM-Dev-101/assets/37101144/d1343317-fa2f-41e1-8af1-1dbb18399719"
