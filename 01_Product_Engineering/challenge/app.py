@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi.responses import HTMLResponse
 from gradio import Server
 
-from fibery import solve
+from fiberly import solve
 from llm import stream_reply
 from schema import Request
 
