@@ -247,6 +247,8 @@ wants a field the schema does not have, that is a Step 5 change first.
 - Keep `llm.py` provider-agnostic. Anything vendor-specific belongs in config.
 - Do not add authentication, databases, or a frontend framework unless asked.
   Week 1 is deliberately small.
+- When asked to add something, add only that. Leave existing functions, names
+  and docstrings as they are unless I ask to change them.
 
 ---
 
