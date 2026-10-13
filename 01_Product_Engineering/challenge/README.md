@@ -862,7 +862,7 @@ demo.
 
 Run each prompt through your app. Name the capability it tests.
 
-Pass 1 went through the app's generic `/chat` endpoint. The Fibery endpoint answers only fibre questions and would decline these.
+Pass 1 went through the app's generic `/chat` endpoint. The Fiberly endpoint answers only fibre questions and would decline these.
 
 **1.** *Explain object-oriented programming in simple terms to a complete beginner.*
 **Aspect tested:** pitching an explanation at a beginner's level. **Response:** a dog as the analogy, then class, object, attributes and methods, each with one line, and a ten-line Python example. Right level, but about 300 words with markdown headings, which is long for "simple terms".

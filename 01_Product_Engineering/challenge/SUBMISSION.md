@@ -1,6 +1,6 @@
-# TC1 submission: Fibery
+# TC1 submission: Fiberly
 
-Fibery answers the questions internal operators at Hrvatski Telekom ask every day about fibre
+Fiberly answers the questions internal operators at Hrvatski Telekom ask every day about fibre
 at an address: is it available, is the HAKOM stopwatch running, what is happening with the
 open request, has a deadline been missed and who to contact. Charter:
 [`use_case/CHARTER.md`](../../use_case/CHARTER.md).
@@ -32,7 +32,7 @@ people's heads, so the answers are slow, inconsistent and depend on who you ask.
 conversation so far. The `Response` has an `outcome` (answered, needs clarification, not
 found, out of scope, error), the Croatian answer, the buildings found with their facts, and at
 most one next step. "Not found" and "error" are outcomes of their own, so a failure is never
-shown as an answer. `solve()` is implemented in [`fibery.py`](./fibery.py).
+shown as an answer. `solve()` is implemented in [`fiberly.py`](./fiberly.py).
 
 ## Agent or pipeline
 
@@ -51,8 +51,8 @@ address that is not in the system. All five match word for word in 15 of 15 runs
 ## Step 8: the endpoint
 
 `answer_fibre_question(message, history)` in [`app.py`](./app.py), and the page in
-[`frontend/index.html`](./frontend/index.html): the original plain layout, with Fibery on top
-and the general chat below it. Fibery answers in Croatian, shows the outcome next to every
+[`frontend/index.html`](./frontend/index.html): the original plain layout, with Fiberly on top
+and the general chat below it. Fiberly answers in Croatian, shows the outcome next to every
 answer, and says so visibly when a request fails or the Gradio client can't load.
 
 1. **What is one thing you do at work this could take over?** The manual check across six
@@ -108,7 +108,7 @@ the conversation is logged in [`use_case/stakeholders.md`](../../use_case/stakeh
 All three passes are in the challenge README's Step 11 section.
 
 - **Pass 1:** the base model got all five general prompts right. Its explanations run long.
-- **Pass 2:** after one change, every Fibery prompt came back right, including a follow-up
+- **Pass 2:** after one change, every Fiberly prompt came back right, including a follow-up
   without an ID, a missing city, the complex connection rule and a parked request. The change:
   the model wrote every answer at first and paraphrased rules it should have copied, so plain
   checks are now written in code.
