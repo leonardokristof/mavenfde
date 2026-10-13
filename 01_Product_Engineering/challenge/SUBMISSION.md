@@ -125,15 +125,22 @@ run automatically, the way the five goldens were run here.
 ## Step 12: demo to a real user
 
 I went through it with a representative of the field services, operations and construction
-sector, the person who asked for something like this to be built in the first place. We worked
-out the use case together. He is happy with it, found all five golden examples solid and
-rejected none, so nothing changed (logged in
+sector, the person who asked for something like this to be built in the first place. We went
+through the use case and the five golden examples; he has not seen the running app yet, and
+that is the next step. He helped me get the goldens right and gave me the data export from the
+source applications they are based on, which stays inside the company. He found all five
+solid and rejected none, so nothing changed (logged in
 [`use_case/stakeholders.md`](../../use_case/stakeholders.md) and
 [`use_case/decisions.md`](../../use_case/decisions.md)).
 
-1. What would you use this for?
-2. What is missing before you would actually use it?
-3. What would you expect it to cost?
+1. **What would you use this for?** For the lookups his people do by hand today. Everything I
+   know about that process comes from him: how long each step takes and how long a lookup takes
+   today, which is where the 10 to 15 minutes in the charter come from.
+2. **What is missing before you would actually use it?** Nothing he would add: no other system
+   and no other kind of question.
+3. **What would you expect it to cost?** No figure. We didn't go into it, because this is an
+   internal tool, not something we sell. For an internal tool the number that matters is the
+   one in Step 13: operator hours against model cost.
 
 ## Bring it to work
 
