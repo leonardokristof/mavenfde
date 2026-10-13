@@ -124,7 +124,12 @@ run automatically, the way the five goldens were run here.
 
 ## Step 12: demo to a real user
 
-Not done yet. The three questions, to fill in after showing it to an operator:
+I went through it with a representative of the field services, operations and construction
+sector, the person who asked for something like this to be built in the first place. We worked
+out the use case together. He is happy with it, found all five golden examples solid and
+rejected none, so nothing changed (logged in
+[`use_case/stakeholders.md`](../../use_case/stakeholders.md) and
+[`use_case/decisions.md`](../../use_case/decisions.md)).
 
 1. What would you use this for?
 2. What is missing before you would actually use it?
