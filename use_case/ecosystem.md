@@ -84,7 +84,7 @@ Session 1 egress probe (`helpers.preflight.check_egress`): the default hosts plu
 **Does this match what you were told in the table above?** Where it doesn't, that
 gap is worth chasing — it usually means a proxy nobody documented.
 
-**This was all run through VPN that's why the results are like this. Without VPN connection some of it goes through. 
+**This was all run through VPN that's why the results are like this. Without VPN connection some of it goes through.**
 
 ### Setup findings: personal laptop (prerequisites, 2026-10-13)
 
