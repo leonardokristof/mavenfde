@@ -1131,3 +1131,69 @@ challenge, which carries the full detail.
 
 Everything after this week assumes your app has a contract, a bar, a place to
 live, and someone specific waiting for it.
+
+---
+
+## Golden examples
+
+Edge case: golden 1, a house number with a suffix (12/1) typed without
+diacritics. Decline: golden 5, an address that is not in the system.
+
+## Bring it to work
+
+Napkin math for one operator question, on Claude Sonnet 5.5, the model that
+would go to production.
+
+```
+cost per call   = 40,606 / 1e6 × $2  +  1,000 / 1e6 × $10                 = $0.091
+model per year  = $0.091 × 100 to 250 calls a day × 250                    = $2,280 to $5,701
+human per year  = 10 to 15 min / 60 × €11 to €19 × 100 to 250 a day × 250  = €45,833 to €296,875
+ratio           = human per call / model per call                          = 20× to 52×
+```
+
+- **40,606 input tokens, measured.** `count_tokens` on the pilot's two prompts:
+  5,757 for parsing the question and 34,849 for writing the answer, most of it
+  the response template. The data payload and extra lookup rounds are not
+  counted, so the real number is somewhat higher. One real call through the
+  Step 8 endpoint replaces this.
+- **1,000 output tokens, estimated.** The answer itself is about 150 to 250
+  tokens; the rest is room for the parse step and thinking.
+- **$2 and $10 per 1M tokens, looked up.** Anthropic pricing for Claude Sonnet
+  5.5, the same on Microsoft Foundry.
+- **10 to 15 minutes per question, looked up.** Operators' estimate, not timed
+  yet.
+- **€11 to €19 an hour loaded, looked up.**
+- **100 to 250 questions a day, looked up.** Estimate for the whole company; the
+  pilot saw about one question per user per working day, 48 on its busiest day.
+- Dollars and euros are treated as equal. The rate does not change the
+  conclusion.
+
+The ratio is the same at any volume, because both sides scale with it. 20× to
+52× is comfortable at the top and only viable at the bottom. The lever is the
+response template: it is sent unchanged on every call, so with prompt caching
+(cache reads at $0.20 per 1M) a call costs about $0.018 and the ratio goes to
+101× to 262×. On Claude Haiku 5.5, which the app runs on today, the same call
+costs about $0.005.
+
+**p95 latency target: 60 seconds for a first answer.** The manual check takes
+10 to 15 minutes, so the bar is low; the pilot answered in about 25 seconds
+(typical, p95 not measured). Latency is more likely than cost to stop this being
+used, and reliability more than either: in the pilot, 15 of 107 answers came
+back empty because the connection to the model failed.
+
+**What I would swap:**
+
+- **Data:** synthetic data generated from the real data we hold in the
+  company systems stands in for the six sources, and the goldens stand in for
+  real operator questions from the pilot, with every address and ID invented.
+  In production the app reads the real sources directly.
+- **Model or endpoint:** Claude Sonnet 5.5 on the company's Azure; in this early
+  phase, my personal Anthropic API key. Azure bills Claude at the standard API
+  rates, so the approved endpoint does not change this math.
+- **Access or approval:** DPO and Legal for filtering personal data and how long
+  audit logs are kept; the data warehouse team for stable read access to the
+  source systems; the field construction system owners for read access;
+  DevOps for a production environment and reliable access to the model;
+  Information Security for the agent's tools, service account, user access and
+  audit logging; Regulatory Affairs and the FTTH operations business owners for
+  the HAKOM rules and the responsible contacts.
