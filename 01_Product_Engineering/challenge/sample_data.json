@@ -1,0 +1,73 @@
+{
+  "_note": "Invented buildings in the shape of the real sources. No real address, ID or person. Deadlines and the stopwatch are computed against snapshot_date, not today, so answers stay the same between runs.",
+  "snapshot_date": "2026-10-13",
+  "buildings": [
+    {
+      "adm_id": 4471208, "street": "Gundulićeva", "house_number": "12", "suffix": "1", "city": "Karlovac",
+      "fibre_status": "HOMES PASSED - STREET", "complex_connection": false, "project_name": "FTTH_KARLOVAC_3",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_KARLOVAC_3", "am": "AM za Karlovačku županiju",
+      "open_requests": []
+    },
+    {
+      "adm_id": 4471190, "street": "Gundulićeva", "house_number": "12", "suffix": "", "city": "Karlovac",
+      "fibre_status": "HOMES CONNECTED", "complex_connection": false, "project_name": "FTTH_KARLOVAC_3",
+      "activation_date": "2026-03-10", "regulated_zone": true,
+      "pm": "PM projekta FTTH_KARLOVAC_3", "am": "AM za Karlovačku županiju",
+      "open_requests": []
+    },
+    {
+      "adm_id": 2214637, "street": "Trpimirova", "house_number": "8", "suffix": "", "city": "Imotski",
+      "fibre_status": "HOMES CONNECTED", "complex_connection": false, "project_name": "EUBB_2_Imotski_DT_3_Imotski",
+      "activation_date": "2026-10-05", "regulated_zone": true,
+      "pm": "PM projekta EUBB_2_Imotski", "am": "AM za Splitsko-dalmatinsku županiju",
+      "open_requests": []
+    },
+    {
+      "adm_id": 58126, "street": "Vrbik", "house_number": "23", "suffix": "", "city": "Zagreb",
+      "fibre_status": "HOMES PASSED - HOUSE", "complex_connection": false, "project_name": "FTTH_ZAGREB_TRNJE",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_ZAGREB_TRNJE", "am": "AM za Grad Zagreb",
+      "open_requests": []
+    },
+    {
+      "adm_id": 3305512, "street": "Vukovarska", "house_number": "41", "suffix": "", "city": "Sinj",
+      "fibre_status": "HOMES PASSED - STREET", "complex_connection": false, "project_name": "FTTH_SINJ_2",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_SINJ_2", "am": "AM za Splitsko-dalmatinsku županiju",
+      "open_requests": [
+        {"wwms_id": 51873402, "task": "Završetak FTTH privoda", "task_status": "Dodijeljen", "task_started": "2026-03-01"}
+      ]
+    },
+    {
+      "adm_id": 7720415, "street": "Put Brodarice", "house_number": "14", "suffix": "", "city": "Šibenik",
+      "fibre_status": "FTTA ROLLOUT", "complex_connection": false, "project_name": "FTTH_SIBENIK_5",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_SIBENIK_5", "am": "AM za Šibensko-kninsku županiju",
+      "open_requests": []
+    },
+    {
+      "adm_id": 912377, "street": "Radnička cesta", "house_number": "21", "suffix": "", "city": "Zagreb",
+      "fibre_status": "HOMES CONNECTED", "complex_connection": false, "project_name": "FTTH_ZAGREB_RADNICKA",
+      "activation_date": "2025-11-20", "regulated_zone": false,
+      "pm": "PM projekta FTTH_ZAGREB_RADNICKA", "am": "AM za Grad Zagreb",
+      "open_requests": []
+    },
+    {
+      "adm_id": 5530871, "street": "Kralja Zvonimira", "house_number": "3", "suffix": "", "city": "Rijeka",
+      "fibre_status": "HOMES PASSED - STREET", "complex_connection": true, "project_name": "FTTH_RIJEKA_7",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_RIJEKA_7", "am": "AM za Primorsko-goransku županiju",
+      "open_requests": []
+    },
+    {
+      "adm_id": 6013388, "street": "Ulica Ante Starčevića", "house_number": "17", "suffix": "", "city": "Osijek",
+      "fibre_status": "HOMES PASSED - HOUSE", "complex_connection": false, "project_name": "FTTH_OSIJEK_4",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_OSIJEK_4", "am": "AM za Osječko-baranjsku županiju",
+      "open_requests": [
+        {"wwms_id": 60442718, "task": "Izvođenje Mini projekta", "task_status": "Parkirano", "task_started": "2026-05-04"}
+      ]
+    }
+  ]
+}
