@@ -12,6 +12,7 @@ Use roles, not names. This is a public repo.
 | Week | Who (role) | What you asked | What you learned | Follow-up |
 | --- | --- | --- | --- | --- |
 | 1 | DevOps team, and colleagues who have worked with them | Where a container would run, which cloud, the registry, login, internet access, secrets, who approves a deployment, and whether there is an approved LLM endpoint | A managed container service on GCP or Azure; secrets from the cloud's secret manager; Entra ID login; DevOps, Information Security and the Data Protection Officer approve; several LLM endpoints already exist, but from a laptop they sit behind the authenticated proxy | Which cloud this app goes to, and which LLM endpoint is approved for data that contains personal information |
+| 1 | Representative of the field services, operations and construction sector, who asked for this tool in the first place | Worked through the use case and the five golden examples with him | He is happy with the use case and found the golden examples solid. Nothing to change | His answers to the three Step 12 questions: what he would use it for, what is missing, what he expects it to cost |
 
 ---
 
