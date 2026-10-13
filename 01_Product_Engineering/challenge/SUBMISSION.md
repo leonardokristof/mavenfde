@@ -50,10 +50,10 @@ address that is not in the system. All five match word for word in 15 of 15 runs
 
 ## Step 8: the endpoint
 
-`answer_fibre_question(message, history)` in [`app.py`](./app.py), and the Fibery page in
-[`frontend/index.html`](./frontend/index.html): Croatian, the model name in the header, a tag
-with the outcome on every answer, a "Nova provjera" button that clears the conversation, and a
-visible message when a request fails or the Gradio client can't load.
+`answer_fibre_question(message, history)` in [`app.py`](./app.py), and the page in
+[`frontend/index.html`](./frontend/index.html): the original plain layout, with Fibery on top
+and the general chat below it. Fibery answers in Croatian, shows the outcome next to every
+answer, and says so visibly when a request fails or the Gradio client can't load.
 
 1. **What is one thing you do at work this could take over?** The manual check across six
    systems for one address or request: fibre status, the stopwatch, the open request, missed
