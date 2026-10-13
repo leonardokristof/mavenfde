@@ -3,6 +3,8 @@
 The operator types free text. The model only turns it into lookups (ADM ID,
 AAMS ID or an address) and writes the final answer; code fetches the data from
 the source systems and computes the facts (stopwatch, deadlines, contacts).
+
+`solve(request: Request) -> Response` is implemented in fibery.py.
 """
 
 from datetime import date
@@ -96,8 +98,3 @@ class Response(BaseModel):
     next_step: str | None = Field(
         default=None, description="At most one suggested next step or question"
     )
-
-
-def solve(request: Request) -> Response:
-    """Answer one operator question about fibre at an address or a request."""
-    raise NotImplementedError("implement against this signature")
