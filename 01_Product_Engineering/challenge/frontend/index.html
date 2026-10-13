@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fibery</title>
+    <title>Fiberly</title>
     <style>
       body {
         font-family: system-ui, sans-serif;
@@ -30,7 +30,7 @@
     </style>
   </head>
   <body>
-    <h1>Fibery</h1>
+    <h1>Fiberly</h1>
     <p>
       Upiši adresu, ADM ID ili AAMS broj. Odgovor kaže je li optika dostupna, je li
       aktivna HAKOM štoperica, što je s otvorenim zahtjevom i kome se javiti.
@@ -80,11 +80,11 @@
         client = await Client.connect(window.location.origin);
       } catch (err) {
         console.error(err);
-        addTurn(document.getElementById("fibre-log"), "Fibery",
+        addTurn(document.getElementById("fibre-log"), "Fiberly",
           "Ne mogu učitati Gradio klijent s cdn.jsdelivr.net. Ako je mreža blokira, stranica se učita, ali ne može slati pitanja.");
       }
 
-      // Fibery. The model has no memory: this array is the whole conversation.
+      // Fiberly. The model has no memory: this array is the whole conversation.
       const fibreLog = document.getElementById("fibre-log");
       const fibreInput = document.getElementById("fibre-input");
       const fibreHistory = [];
@@ -96,11 +96,11 @@
         fibreInput.value = "";
 
         addTurn(fibreLog, "You", message);
-        const out = addTurn(fibreLog, "Fibery", "provjeravam...");
+        const out = addTurn(fibreLog, "Fiberly", "provjeravam...");
         try {
           const result = await client.predict("/answer_fibre_question", { message, history: fibreHistory });
           const response = JSON.parse(result.data[0]);
-          out.parentElement.querySelector(".who").textContent = `Fibery (${OUTCOMES[response.outcome] ?? response.outcome}):`;
+          out.parentElement.querySelector(".who").textContent = `Fiberly (${OUTCOMES[response.outcome] ?? response.outcome}):`;
           out.textContent = response.answer;
           fibreHistory.push({ role: "user", content: message });
           fibreHistory.push({ role: "assistant", content: response.answer });

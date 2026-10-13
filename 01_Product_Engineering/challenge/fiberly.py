@@ -1,4 +1,4 @@
-"""Fibery: answer an operator's question about fibre at an address or a request.
+"""Fiberly: answer an operator's question about fibre at an address or a request.
 
 A fixed pipeline. The model does the two steps that need language: it turns the
 operator's free text into lookups, and it writes the final answer. Everything in
@@ -324,9 +324,9 @@ def solve(request: Request) -> Response:
                                     buildings=[b for _, b in found],
                                     next_step=found[-1][0]["next_step"])
     except Exception as exc:  # never show an empty answer: the pilot lost 15 of 107 that way
-        print(f"fibery: error {type(exc).__name__}: {exc}", flush=True)
+        print(f"fiberly: error {type(exc).__name__}: {exc}", flush=True)
         response = Response(outcome="error", answer=TECH_PROBLEM)
 
-    print(f"fibery: {response.outcome}, {len(response.buildings)} building(s), "
+    print(f"fiberly: {response.outcome}, {len(response.buildings)} building(s), "
           f"{time.time() - started:.1f} s, tokens in {tokens['in']} out {tokens['out']}", flush=True)
     return response
