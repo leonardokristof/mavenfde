@@ -320,6 +320,13 @@ def _(mo):
     explain what the issuer column predicts that the status column cannot.
 
     **Answer:**
+
+    Status only says the handshake worked today, from this machine; the issuer
+    says who actually holds the TLS connection. On my work laptop that is the
+    corporate CA, which my OS trusts and a fresh container does not, so a
+    `pip install` that works in my terminal fails with a certificate error
+    inside Docker. On my personal laptop every issuer was a public CA, so the
+    problem doesn't exist there.
     """)
     return
 
@@ -334,6 +341,12 @@ def _(mo):
     about what a byte-comparison gate is actually able to promise.
 
     **Answer:**
+
+    `make check` never runs the notebook. It exports the `.py` and checks that
+    the `.ipynb` has the same bytes, and a notebook that crashes on cell three
+    exports to exactly the same bytes as one that works. So a byte-comparison
+    gate can only promise that the two formats agree, not that either of them
+    runs. For that you need `make execute`.
     """)
     return
 
@@ -519,6 +532,14 @@ def _(mo):
     rewrite if the code had called a vendor SDK directly.
 
     **Answer:**
+
+    The app calls `litellm.completion()` and the provider is just the model
+    string in `.env`, plus `LLM_API_BASE` when it goes through a gateway. My
+    personal laptop calls the Anthropic API directly, and moving it to Claude
+    on Vertex AI or to our internal gateway is a change in `.env`, not in the
+    code. With a vendor SDK called directly I would have to rewrite every call
+    site, the streaming loop (each SDK sends chunks in its own shape) and the
+    timeout and retry handling around it.
     """)
     return
 
@@ -534,6 +555,29 @@ def _(mo):
     `/clear` a better test than simply continuing the conversation?
 
     **Answer:**
+
+    It means the agent was following the conversation, not the file. Inside
+    the same chat it remembers that I complained, so it behaves. After `/clear`
+    only `CLAUDE.md` is left, and if the old behaviour comes back the rule was
+    too vague to act on cold. That is why `/clear` is the real test: it checks
+    the rule, not the agent's memory of the chat.
+
+    What happened when I ran the drill: I asked, in plan mode, for a token
+    counter in `llm.py`. It works (24 tokens for "hello there"), but the agent
+    also pulled the message building out of `stream_reply()` into a new
+    `build_messages()` and rewrote its docstring. Nobody asked for that. I added
+    one rule under Conventions: add only what was asked, leave existing
+    functions, names and docstrings alone. In a fresh session, without
+    mentioning the rule, I asked for a different helper that trims the history
+    to the last N turns. It added the function, changed zero existing lines and
+    said it left `stream_reply()` alone because of the rule. What it still does
+    is write long docstrings, two paragraphs for six lines of code, so that is
+    the next rule if it keeps bothering me.
+
+    I also ran `claude -p` over `use_case/ecosystem.md`. The three bullets
+    matched what I wrote, and it pointed out what is still a guess on the work
+    side: no probe on the work laptop, the CDN not tested there, and VPN on and
+    off not separated.
     """)
     return
 
