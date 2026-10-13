@@ -11,7 +11,7 @@ Use roles, not names. This is a public repo.
 
 | Week | Who (role) | What you asked | What you learned | Follow-up |
 | --- | --- | --- | --- | --- |
-| 1 | <!-- e.g. Platform Engineering lead --> | <!-- where would a container run here? --> | <!-- --> | <!-- --> |
+| 1 | DevOps team, and colleagues who have worked with them | Where a container would run, which cloud, the registry, login, internet access, secrets, who approves a deployment, and whether there is an approved LLM endpoint | A managed container service on GCP or Azure; secrets from the cloud's secret manager; Entra ID login; DevOps, Information Security and the Data Protection Officer approve; several LLM endpoints already exist, but from a laptop they sit behind the authenticated proxy | Which cloud this app goes to, and which LLM endpoint is approved for data that contains personal information |
 
 ---
 
