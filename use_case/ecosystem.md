@@ -18,41 +18,59 @@ put real hostnames, IPs, or architecture diagrams in this file.
 
 **Who did you ask?** (role, not name)
 
-Not asked yet. The answers below are what I measured on my own machine during
-setup and what I already know from earlier internal AI work. Everything marked
-*(to confirm)* goes to the DevOps team and Information Security in TC1 Step 6.
+DevOps and colleagues that I know that worked with DevOps team.
 
 | # | Question | Answer |
 | :---: | --- | --- |
-| 1 | Where do internal apps run? (k8s, ECS, App Service, a VM someone maintains) | Internal automation and AI workflows run on a self-hosted low-code workflow platform operated by the DevOps team. Where a containerised app would run is *(to confirm)*. |
-| 2 | Which cloud? AWS, Azure, GCP, on-prem, several? | The data warehouse and source systems appear to run in the company's own data centre *(to confirm)*. GCP (Vertex AI) and Azure (AI Foundry) are both used for AI models. Other cloud use *(to confirm)*. |
-| 3 | Is there an internal container registry? | *(to confirm)* |
-| 4 | How do users log in? (Okta, Entra ID, Ping, SAML, homegrown) | *(to confirm)* |
+| 1 | Where do internal apps run? (k8s, ECS, App Service, a VM someone maintains) | As a container on a managed cloud service, most likely Cloud Run on GCP or Azure Container Apps on Azure. Both run the same Docker image, so no rework. |
+| 2 | Which cloud? AWS, Azure, GCP, on-prem, several? | Several. GCP and Azure are the ones used most often. Which one for this app |
+| 3 | Is there an internal container registry? | Expected: the registry of whichever cloud the app runs on (Artifact Registry on GCP, Container Registry on Azure). Since direct connections to public registries time out from the corporate network, pulling base images from Docker Hub is likely blocked too. |
+| 4 | How do users log in? (Okta, Entra ID, Ping, SAML, homegrown) | Expected: Entra ID single sign-on with work accounts, since that's what employees already use. |
 | 5 | Can the app reach the internet? Egress proxy? Allowlist? | Only through the corporate web proxy, configured on laptops by a PAC file. TLS is intercepted with a corporate CA. Direct connections to public package registries time out. |
-| 6 | Where do secrets come from? (Vault, Secrets Manager, Key Vault) | *(to confirm)* |
-| 7 | Who approves a deployment, and what review does it need? | *(to confirm)*. Expected: DevOps for the platform, Information Security for data access and the agent's tools, and the Data Protection Officer because the data contains personal information. |
-| 8 | Is there an approved internal LLM endpoint already? | Partly. A company Azure AI Foundry resource (R&D playground) has GPT and Claude deployments with key auth: GPT models through the Azure OpenAI route, Claude models only through the Anthropic-compatible route (`x-api-key`, not `api-key`). Claude is also available through Vertex AI in a development GCP project, and Claude Code runs through a corporate gateway. From a laptop all of these sit behind the authenticated proxy. Which one is approved for production, and on what data, *(to confirm)*. |
+| 6 | Where do secrets come from? (Vault, Secrets Manager, Key Vault) | The cloud's own secret manager (Secret Manager on GCP or Key Vault on Azure) instead of a .env file. |
+| 7 | Who approves a deployment, and what review does it need? | DevOps for the platform, Information Security for data access and the agent's tools, and the Data Protection Officer because the data contains personal information. |
+| 8 | Is there an approved internal LLM endpoint already? | Yes, we have multiple endpoints that we can use, GCP, Azure, internal platform ... |
 
 **What surprised you?**
 
-<!-- your answer here -->
+The big difference between my personal computer and my work laptop. On my personal machine everything just works, but on the work laptop I can't really do anything without first contacting IT to get permission to install WSL or any other tool. On top of that, every outbound connection goes through an authenticated proxy with TLS interception, and public package registries aren't reachable directly. So before writing a single line of code, the setup itself depends on other teams.
 
 **What would you have to change about your app to deploy there?**
 
-<!-- your answer here -->
+- Build from base images and packages available through the internal registry and proxy, not straight from Docker Hub and PyPI
+- Trust the corporate CA inside the container, so outbound TLS calls through the proxy don't fail on certificate errors
+- Push the image to the internal registry of the chosen cloud
+- Read secrets from the cloud's secret manager instead of a .env file
+- Put Entra ID login in front of the app
+- Point the model to the approved endpoint, for example GPT through Vertex AI or Claude through Azure, which with LiteLLM is a change in environment variables, not in the code
+- Serve frontend libraries from the app itself instead of a public CDN
+- Get approval from Information Security and the Data Protection Officer for the data the app reads and the tools it can call
 
 ---
 
 ## Week 1 — what your machine told you
 
-<!--
-  Paste the egress probe output from Session 1 here. It is evidence, and it
-  frequently disagrees with what people believe about their own network.
--->
 
-<!-- probe output here -->
+### 2026-10-13 · personal laptop, off the corporate network
 
-### Setup findings (prerequisites, before Session 1)
+Session 1 egress probe (`helpers.preflight.check_egress`): the default hosts plus
+`api.anthropic.com`, the model API this app actually calls.
+
+| Host | Why | Status | Signed by |
+| --- | --- | --- | --- |
+| `pypi.org` | Python packages | OK | GlobalSign nv-sa |
+| `files.pythonhosted.org` | the actual wheel downloads | OK | GlobalSign nv-sa |
+| `api.openai.com` | the model API | OK | Google Trust Services |
+| `cdn.jsdelivr.net` | the CDN the Week 1 frontend uses | OK | Sectigo Limited |
+| `huggingface.co` | open weights, Weeks 2 and 8 | OK | Amazon |
+| `registry-1.docker.io` | container images | OK | Amazon |
+| `github.com` | this repository | OK | Sectigo Limited |
+| `api.anthropic.com` | the model API this app actually uses | OK | Google Trust Services |
+
+**Verdict:** Open network, public CAs, no proxy. Nothing here will bite you.
+8/8 reachable, no proxy or CA variables set.
+
+### Setup findings: corporate laptop (prerequisites, before Session 1)
 
 | Finding | What it means | Workaround used |
 | --- | --- | --- |
@@ -65,6 +83,19 @@ setup and what I already know from earlier internal AI work. Everything marked
 
 **Does this match what you were told in the table above?** Where it doesn't, that
 gap is worth chasing — it usually means a proxy nobody documented.
+
+**This was all run through VPN that's why the results are like this. Without VPN connection some of it goes through. 
+
+### Setup findings: personal laptop (prerequisites, 2026-10-13)
+
+| Finding | What it means | Workaround used |
+| --- | --- | --- |
+| Git, Docker Desktop, Python 3.14, uv and Claude Code installed with no approvals; `setup_check.sh` passed with two warnings | Nothing on this machine depends on IT | None needed |
+| `uv sync` reached the public package registry directly | No proxy and no corporate CA, nothing to configure | None needed |
+| Docker Desktop is allowed; the daemon only had to be started | The Week 1 image builds and runs here. `/health` and `/chat` answer from the container, it runs as a non-root user and `.env` is not in the image | Start Docker Desktop before building |
+| The model is called directly through the Anthropic API with a personal key | No proxy authentication in the way, a test message came back in 1.3 seconds. A personal key is not a company-approved endpoint | Only synthetic data on this machine; real data only on the approved company endpoint |
+| `python` is not on the PATH, only `python3` | macOS has no `python` alias by default | `uv run python` picks the interpreter itself |
+| Claude Code runs on a personal subscription, not the corporate gateway | Nothing goes through a company-controlled path, so the privacy settings are up to me | "Help improve Claude" switched off; local `.claude/settings.json` blocks reading `.env` and `use_case/data/` and turns off telemetry |
 
 ---
 
