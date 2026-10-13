@@ -1,96 +1,149 @@
 <!doctype html>
-<html lang="en">
+<html lang="hr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Rename this. It is your app. -->
-    <title>Your AI Application</title>
+    <title>Fibery</title>
     <style>
+      :root { --ink: #1d2433; --muted: #667085; --line: #d0d5dd; --accent: #e20074; }
       body {
         font-family: system-ui, sans-serif;
-        max-width: 44rem;
+        color: var(--ink);
+        max-width: 46rem;
         margin: 2rem auto;
         padding: 0 1rem;
         line-height: 1.5;
       }
+      header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+      h1 { margin: 0; color: var(--accent); }
+      .muted { color: var(--muted); font-size: 0.9rem; }
       #log {
-        border: 1px solid #ccc;
-        border-radius: 6px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
         padding: 1rem;
         min-height: 20rem;
-        margin-bottom: 1rem;
-        white-space: pre-wrap;
+        margin: 1rem 0;
         overflow-y: auto;
       }
-      .turn { margin-bottom: 1rem; }
-      .who { font-weight: 600; }
+      .turn { margin-bottom: 1.25rem; }
+      .who { font-weight: 600; margin-right: 0.4rem; }
+      .text { white-space: pre-wrap; }
+      .summary { font-family: ui-monospace, monospace; font-size: 0.85rem; color: var(--muted); }
+      .tag {
+        display: inline-block; font-size: 0.75rem; padding: 0 0.45rem;
+        border-radius: 999px; border: 1px solid var(--line); margin-right: 0.4rem;
+      }
+      .tag.not_found, .tag.needs_clarification { border-color: #f79009; color: #b54708; }
+      .tag.error { border-color: #d92d20; color: #b42318; }
+      .error { color: #b42318; }
       form { display: flex; gap: 0.5rem; }
-      input { flex: 1; padding: 0.5rem; font: inherit; }
-      button { padding: 0.5rem 1rem; font: inherit; }
+      input { flex: 1; padding: 0.55rem; font: inherit; border: 1px solid var(--line); border-radius: 6px; }
+      button { padding: 0.55rem 1rem; font: inherit; border-radius: 6px; border: 1px solid var(--line); background: white; }
+      button[type="submit"] { background: var(--accent); border-color: var(--accent); color: white; }
     </style>
   </head>
   <body>
-    <h1>Your AI Application</h1>
-    <p>
-      This is a deliberately plain frontend. Making it good is your job — open
-      this file in VS Code and point Claude Code at it.
+    <header>
+      <h1>Fibery</h1>
+      <span class="muted" id="model"></span>
+    </header>
+    <p class="muted">
+      Upiši adresu, ADM ID ili AAMS broj. Odgovor kaže je li optika dostupna, je li
+      aktivna HAKOM štoperica, što je s otvorenim zahtjevom i kome se javiti.
     </p>
 
     <div id="log"></div>
     <form id="form">
-      <input id="input" placeholder="Ask something..." autocomplete="off" />
-      <button type="submit">Send</button>
+      <input id="input" placeholder="npr. provjeri adresu Vrbik 23 Zagreb, adm 2214637, tiket 51873402" autocomplete="off" />
+      <button type="submit">Provjeri</button>
+      <button type="button" id="reset">Nova provjera</button>
     </form>
 
     <script type="module">
-      // NOTE: this loads the Gradio client from a public CDN. On a locked-down
-      // corporate network that request may simply fail. Worth noticing now --
-      // it is the kind of thing that turns a working demo into a broken one the
-      // moment it moves inside the firewall.
-      import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
-
-      const client = await Client.connect(window.location.origin);
       const log = document.getElementById("log");
       const form = document.getElementById("form");
       const input = document.getElementById("input");
+      const OUTCOMES = {
+        answered: "odgovor",
+        needs_clarification: "treba pojašnjenje",
+        not_found: "nije u sustavu",
+        out_of_scope: "izvan teme",
+        error: "greška",
+      };
 
-      // The model has no memory. This array is the entire conversation.
-      const history = [];
-
-      function addTurn(who, text) {
+      function addTurn(who) {
         const div = document.createElement("div");
         div.className = "turn";
-        div.innerHTML = `<span class="who">${who}:</span> `;
-        const span = document.createElement("span");
-        div.appendChild(span);
-        span.textContent = text;
+        div.innerHTML = `<span class="who">${who}:</span>`;
         log.appendChild(div);
         log.scrollTop = log.scrollHeight;
-        return span;
+        return div;
       }
+
+      function showAnswer(div, response) {
+        const tag = document.createElement("span");
+        tag.className = `tag ${response.outcome}`;
+        tag.textContent = OUTCOMES[response.outcome] ?? response.outcome;
+        div.appendChild(tag);
+        for (const line of response.answer.split("\n")) {
+          const p = document.createElement("div");
+          // The last line of each building (ADM ID: ... | Status: ...) is for copying, not reading.
+          p.className = /^(ADM ID|AAMS ID): /.test(line) ? "summary" : "text";
+          p.textContent = line;
+          div.appendChild(p);
+        }
+        log.scrollTop = log.scrollHeight;
+      }
+
+      fetch("/health").then((r) => r.json()).then((h) => {
+        document.getElementById("model").textContent = `model: ${h.model}`;
+      });
+
+      // The Gradio client comes from a public CDN. A network that blocks it would
+      // otherwise leave a page that looks fine and does nothing, so say it out loud.
+      let client;
+      try {
+        const { Client } = await import("https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js");
+        client = await Client.connect(window.location.origin);
+      } catch (err) {
+        console.error(err);
+        const div = addTurn("Fibery");
+        div.insertAdjacentHTML("beforeend", `<div class="error">Ne mogu učitati Gradio klijent s cdn.jsdelivr.net. Ako je mreža blokira, stranica se učita, ali ne može slati pitanja.</div>`);
+      }
+
+      // The model has no memory. This array is the whole conversation.
+      let history = [];
+
+      document.getElementById("reset").addEventListener("click", () => {
+        history = [];
+        log.innerHTML = "";
+        input.focus();
+      });
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const message = input.value.trim();
-        if (!message) return;
+        if (!message || !client) return;
         input.value = "";
 
-        addTurn("You", message);
-        const out = addTurn("Assistant", "");
+        addTurn("Ti").insertAdjacentText("beforeend", " " + message);
+        const out = addTurn("Fibery");
+        out.insertAdjacentHTML("beforeend", `<span class="muted">provjeravam...</span>`);
 
-        // submit() streams; each event carries the reply so far.
-        let reply = "";
-        const job = client.submit("/chat", { message, history });
-        for await (const event of job) {
-          if (event.type === "data") {
-            reply = event.data[0];
-            out.textContent = reply;
-            log.scrollTop = log.scrollHeight;
-          }
+        try {
+          const result = await client.predict("/answer_fibre_question", { message, history });
+          const response = JSON.parse(result.data[0]);
+          out.lastChild.remove();
+          showAnswer(out, response);
+          history.push({ role: "user", content: message });
+          history.push({ role: "assistant", content: response.answer });
+        } catch (err) {
+          out.lastChild.remove();
+          const div = document.createElement("div");
+          div.className = "error";
+          div.textContent = `Zahtjev nije prošao: ${err.message ?? err}`;
+          out.appendChild(div);
         }
-
-        history.push({ role: "user", content: message });
-        history.push({ role: "assistant", content: reply });
       });
     </script>
   </body>

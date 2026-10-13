@@ -56,6 +56,24 @@ def count_tokens(message: str, history: list[dict] | None = None) -> int:
     return token_counter(model=MODEL, messages=build_messages(message, history))
 
 
+def complete(system: str, messages: list[dict], max_tokens: int = 2000) -> tuple[str, dict]:
+    """One call without streaming. Returns the text and the token counts the provider reported."""
+    kwargs = {
+        "model": MODEL,
+        "messages": [{"role": "system", "content": system}, *messages],
+        "max_tokens": max_tokens,
+        "timeout": 60,
+    }
+    if API_BASE:
+        kwargs["api_base"] = API_BASE
+    if EXTRA_HEADERS:
+        kwargs["extra_headers"] = EXTRA_HEADERS
+
+    response = completion(**kwargs)
+    usage = {"in": response.usage.prompt_tokens, "out": response.usage.completion_tokens}
+    return response.choices[0].message.content or "", usage
+
+
 def stream_reply(message: str, history: list[dict] | None = None):
     """Yield the assistant's reply as it arrives, one growing string at a time."""
     messages = build_messages(message, history)
