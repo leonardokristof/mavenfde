@@ -11,7 +11,9 @@ from pathlib import Path
 from fastapi.responses import HTMLResponse
 from gradio import Server
 
+from fibery import solve
 from llm import stream_reply
+from schema import Request
 
 app = Server()
 
@@ -27,6 +29,17 @@ FRONTEND = Path(__file__).parent / "frontend" / "index.html"
 def chat(message: str, history: list | None = None) -> str:
     """Stream a reply to one user message."""
     yield from stream_reply(message, history)
+
+
+@app.api(name="answer_fibre_question")
+def answer_fibre_question(message: str, history: list | None = None) -> str:
+    """Answer an operator's question about fibre at an address, an ADM ID or a WWMS request number.
+
+    Returns the Response from schema.py as JSON: the outcome (answered, needs
+    clarification, not found, out of scope, error), the Croatian answer, the
+    buildings found and at most one next step.
+    """
+    return solve(Request(message=message, history=history or [])).model_dump_json()
 
 
 # --- The frontend ------------------------------------------------------------
