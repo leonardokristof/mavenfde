@@ -1,10 +1,10 @@
-"""The contract for Fibery: what an operator sends in and what comes back.
+"""The contract for Fiberly: what an operator sends in and what comes back.
 
 The operator types free text. The model only turns it into lookups (ADM ID,
 AAMS ID or an address) and writes the final answer; code fetches the data from
 the source systems and computes the facts (stopwatch, deadlines, contacts).
 
-`solve(request: Request) -> Response` is implemented in fibery.py.
+`solve(request: Request) -> Response` is implemented in fiberly.py.
 """
 
 from datetime import date
