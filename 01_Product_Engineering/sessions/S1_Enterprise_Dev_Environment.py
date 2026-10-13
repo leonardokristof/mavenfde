@@ -321,12 +321,12 @@ def _(mo):
 
     **Answer:**
 
-    Status only says the handshake worked today, from this machine. The issuer
-    says who actually holds the TLS connection. On my work laptop it is the
+    Status only says the handshake worked today, from this machine; the issuer
+    says who actually holds the TLS connection. On my work laptop that is the
     corporate CA, which my OS trusts and a fresh container does not, so a
-    `pip install` that works in my terminal will fail with a certificate error
-    inside Docker. On my personal laptop every issuer was a public CA, so that
-    problem does not exist there.
+    `pip install` that works in my terminal fails with a certificate error
+    inside Docker. On my personal laptop every issuer was a public CA, so the
+    problem doesn't exist there.
     """)
     return
 
