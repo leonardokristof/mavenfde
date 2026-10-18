@@ -128,12 +128,14 @@ def _split_number(raw: str) -> tuple[str, str]:
 
 
 def _find(lookup: dict) -> list[dict]:
-    kind = lookup.get("type")
+    kind, id_number = lookup.get("type"), lookup.get("number")
+    if isinstance(id_number, str) and id_number.strip().isdigit():  # some models return the ID as text
+        id_number = int(id_number)
     if kind == "adm":
-        return [b for b in DATA["buildings"] if b["adm_id"] == lookup.get("number")]
+        return [b for b in DATA["buildings"] if b["adm_id"] == id_number]
     if kind == "wwms":
         return [b for b in DATA["buildings"]
-                if any(r["wwms_id"] == lookup.get("number") for r in b["open_requests"])]
+                if any(r["wwms_id"] == id_number for r in b["open_requests"])]
     number, suffix = _split_number(lookup.get("house_number", ""))
     return [b for b in DATA["buildings"]
             if b["house_number"] == number and b["suffix"].lstrip("0").upper() == suffix
