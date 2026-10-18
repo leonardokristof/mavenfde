@@ -103,6 +103,8 @@ gap is worth chasing — it usually means a proxy nobody documented.
 
 Personal laptop (Apple M5, 16 GB): models up to about 2B run in float16 on the GPU without trouble (Qwen3-1.7B: 8 messages of up to 40 tokens in about 2 s, *measured*); the 4–8B tier should fit when quantised (*looked up*, course table). Work laptop: not tested, and unlikely without approvals, since there are no admin rights, no container runtime, and huggingface.co was never probed from the corporate network. To ask DevOps: is there an internal model registry, or a GPU host where a model could run inside HT?
 
+Local model: plausible for HT only on a GPU host inside the company. On the laptop, qwen3:8b through Ollama answered all five goldens word for word with a two-line change in `.env` and no code changes, but took 13 to 29 s a question against 1 to 2.5 s on Claude, and timed out after 60 s once (*measured*). For it to work at HT: a GPU server approved by DevOps, model weights from an approved registry (ollama.com and huggingface.co weren't tested from the corporate network), and a timeout and p95 target set for local speed.
+
 ---
 
 ## Week 9 — the full checklist
