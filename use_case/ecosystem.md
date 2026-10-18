@@ -99,6 +99,12 @@ gap is worth chasing — it usually means a proxy nobody documented.
 
 ---
 
+## Week 2 · local models
+
+Personal laptop (Apple M5, 16 GB): models up to about 2B run in float16 on the GPU without trouble (Qwen3-1.7B: 8 messages of up to 40 tokens in about 2 s, *measured*); the 4–8B tier should fit when quantised (*looked up*, course table). Work laptop: not tested, and unlikely without approvals, since there are no admin rights, no container runtime, and huggingface.co was never probed from the corporate network. To ask DevOps: is there an internal model registry, or a GPU host where a model could run inside HT?
+
+---
+
 ## Week 9 — the full checklist
 
 <!--
