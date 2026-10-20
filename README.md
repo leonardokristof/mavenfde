@@ -5,6 +5,7 @@
 > | Week | Status | Start here |
 > | --- | --- | --- |
 > | 1 · Product engineering | ✅ submitted | [Submission](01_Product_Engineering/challenge/SUBMISSION.md) · [Charter](use_case/CHARTER.md) · [Goldens](use_case/evals/golden.jsonl) · [Video](https://github.com/leonardokristof/mavenfde/releases/tag/week-1) |
+> | 2 · Open weights | ✅ submitted, Step 6 review after 23 October | [Submission](02_Open_Weights/challenge/SUBMISSION.md) · [Datasheet](use_case/data/DATASHEET.md) · [Axes](02_Open_Weights/challenge/generate.py) · [Decisions](use_case/decisions.md) |
 
 ---
 
