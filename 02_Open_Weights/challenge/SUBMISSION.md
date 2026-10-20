@@ -83,6 +83,54 @@ The goldens are not disjoint from the system: the code writes the same template 
 Week 8 fine-tunes on data seeded from them. None of the 1794 rows is within 0.7 of a golden.
 The model and endpoint decision is in `use_case/decisions.md`.
 
+## Haiku or Sonnet? Two files, and a question for you
+
+I also wanted to see what a stronger model does with exactly the same job, so I have two files.
+Claude Sonnet 5.5 wrote the same 600 combinations, with the same prompt and the same five
+goldens. It ran as six Claude Code subagents of 100 combinations each, not through the API.
+Its rows then went through the same dedupe, validation and leak checks.
+[`compare_models.py`](./compare_models.py) holds the subagents' instruction and the comparison.
+
+| | Haiku, `synthetic_v1.jsonl` | Sonnet, `synthetic_sonnet.jsonl` |
+| --- | ---: | ---: |
+| Generated → after dedupe → schema-valid | 1800 → 1796 → 1796 | 1800 → 1791 → 1791 |
+| Kept after the leak checks | 1794 | 1777 |
+| Rows removed for reusing a golden's values | 0 | 14 |
+| Median message / answer length | 121 / 299 chars | 86 / 261 chars |
+| Distinct ADM IDs / an ADM on two addresses | 1186 / 1 | 1331 / 0 |
+| Rows that keep their combination's ID prefix | 97 % | 100 % |
+| Pasted emails that look like an email | 172 of 357 | 257 of 348 |
+| Rows with a status the schema doesn't have | 126 | 133 |
+| Most common opening | "operater: provjeri", 138 times | "operater: adm", 102 times |
+
+The same combination, a parked request asked about colloquially:
+
+> **Haiku:** *šta ima na zgradi Kukuljevićeva 3 Bjelovar, adm 4062931* → "…Zahtjev je trenutno
+> parkiran, pa ne mogu dati rok dok se ne odblokira. Jesi li popunio optika interes?"
+>
+> **Sonnet:** *daj vidi šta je s adm 4062915, korisnik me gnjavi već tjedan* → "…Zahtjev je
+> parkiran jer čeka suglasnost vlasnika, pa korisniku ne možeš ništa obećati u vezi roka."
+
+What I see:
+- **Sonnet reads more like an operator.** Its messages are shorter, its emails look like emails,
+  its IDs never collide, and it counts deadlines in days, as golden 2 does, where Haiku writes
+  "3 weeks".
+- **Sonnet broke the one rule that matters most for a leak.** Fourteen of its rows reused
+  project names or a street from the goldens, which the prompt forbids. Haiku reused none. The
+  course's leak check missed most of them, because it doesn't see names written with
+  underscores.
+- **Both made up a status, "IN DESIGN".** Haiku did it 41 times, Sonnet 79. That one is my axis's
+  fault, not the models': the value "in design or FTTA rollout, with no timeline" names a state
+  the schema has no status for.
+- **Only Haiku's file can be made again with one command.** Sonnet's was written by agents, and
+  one of them said its first pass had copied rows from earlier combinations.
+
+For now Haiku's file is `synthetic_v1`, because the datasheet, the counts and `generate.py`
+describe it. **If you have read this far, I would like your advice:** for Week 3, where
+retrieval is built over this data, which file would you use? Would you pay for the more natural
+messages with a leak risk you have to check by hand, and with a dataset you can't regenerate
+exactly? Or would you stay with the model that follows the rules but writes stiffer messages?
+
 ## Step 5: the app on a local model
 
 Fiberly from Week 1, run on `qwen3:8b` through Ollama on my laptop (Apple M5, 16 GB) instead of
