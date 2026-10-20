@@ -559,3 +559,15 @@ challenge, which carries the full detail.
 
 Everything after this week assumes you have data you can show people, and a
 document that says what it is.
+
+---
+
+## Bring it to work
+
+**The project:** the company's internal AI platform, a gateway that gives Claude Code, Gemini CLI and Claude Desktop API access to Claude and Gemini, plus a chat interface for both. It was ready to deploy and then waited on the GDPR and data-processing review: what the platform takes in, what it keeps and where it sends it. I wrote those answers with Legal and Compliance, and nearly every round came back with something to fix.
+
+What this week would change is the order. A datasheet settles up front what the data is, what was removed and what it may be used for, before anything is built on it. Agreed with Legal at the start, the platform's GDPR document would have been written once against that agreement instead of corrected round after round.
+
+- **Data:** before anything else, a short set of example prompts for each kind of data employees would send (code, internal documents, questions that mention a customer), written from a description and never taken from real chat logs, so Legal and I classify concrete examples instead of arguing about definitions.
+- **Model or endpoint:** Claude and Gemini through the company's Google Cloud, the way the platform already calls them, not through the providers' public APIs.
+- **Access or approval:** ask Legal and Compliance to define first which data may be processed by an LLM and in what way (what is stored, for how long, where it is sent), and only then write the GDPR document against that definition.
