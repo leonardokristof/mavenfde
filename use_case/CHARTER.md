@@ -15,7 +15,7 @@
 ## The problem
 
 **Who has it?** One real role, not a department.
-
+It's affecting multiple roles, not one. 
 My main users are the internal employees who handle fibre connection cases at Hrvatski Telekom. These include helpdesk and sales support agents, regional project managers (PMs), account managers (AMs), programme managers and field execution coordinators. They work in regional teams across Croatia, in Zagreb, Split, Osijek, Zadar, Rijeka and smaller towns. Most are experienced telecom professionals that use internal desktop tools all day. Their technical skills vary widely: some know the network data in depth, while others mainly deal with customers and requests. Many of them handle a steady flow of cases every day, often while a customer or a colleague from sales is waiting for an answer.
 
 **What are they trying to do?**
@@ -79,6 +79,7 @@ would notice.
 | **Out** | The system writes a short, ready-to-use answer in a colleague's tone, so the operator can immediately tell the customer or a colleague what is going on. The answer starts with the fibre status of the building and what it means ("fibre is in the street but not yet connected to the building, construction work is needed, expected within 90 days"). If the HAKOM stopwatch is active, the answer gives that first, with the exact expiry date ("new connection requests can't be accepted until 31.10.2026"). It then describes any open request: the current task, what it means and how long it usually takes. If a deadline has been missed, it says by how many days and recommends a specific person to escalate to ("242 days past the deadline, I suggest escalating to [name]"). The answer can also include short notes, for example that another open request or a second building record exists for the same address. It ends with at most one suggested next step ("Have you already submitted a connection request?") and a fixed summary line ("ADM ID: X \| Status: Y \| Project: Z"). When the address or ID doesn't exist, the output is a single honest sentence saying so and naming who to contact, instead of a guess. |
 
 ---
+
 
 ## Decisions made later
 
