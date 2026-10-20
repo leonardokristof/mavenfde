@@ -20,6 +20,7 @@ from __future__ import annotations
 import itertools
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Callable, Iterable, Sequence
 
@@ -146,12 +147,15 @@ def combinations(axes: dict[str, Sequence[str]]) -> list[dict]:
 def generate(
     cfg,
     seeds: Sequence[dict],
-    axes: dict[str, Sequence[str]],
+    axes: dict[str, Sequence[str]] | Sequence[dict],
     *,
     per_combo: int = 3,
     limit: int | None = None,
     validate: Callable[[dict], bool] | None = None,
     dedupe_threshold: float = 0.7,
+    dedupe_by: Callable[[dict], object] | None = None,
+    examples: int = 3,
+    workers: int = 1,
     progress: Callable[[int, int], None] | None = None,
     max_retries: int = 3,
     timeout: float = 120.0,
@@ -159,21 +163,24 @@ def generate(
 ) -> tuple[list[dict], SDGReport]:
     """Generate across the axis space, dedupe, validate, and report honestly.
 
-    `validate` is your pydantic model's check — anything that raises or returns
-    False drops the row. Most generated data dies here, and that is the system
-    working.
+    `axes` is a dict (every combination is run) or your own list of combinations,
+    when some points in the space make no sense. `validate` is your pydantic
+    model's check — anything that raises or returns False drops the row. Most
+    generated data dies here, and that is the system working. `dedupe_by` limits
+    dedupe to rows in the same group, so two near-identical rows that need
+    different answers both survive. `workers` runs that many calls at once.
     """
     from .llm import chat
 
-    combos = combinations(axes)
+    combos = combinations(axes) if isinstance(axes, dict) else list(axes)
     if limit:
         combos = combos[:limit]
 
-    shown = "\n".join(json.dumps(seed, ensure_ascii=False) for seed in seeds[:3])
+    shown = "\n".join(json.dumps(seed, ensure_ascii=False) for seed in seeds[:examples])
     report = SDGReport()
     raw: list[dict] = []
 
-    for combo_number, combo in enumerate(combos, 1):
+    def ask(combo: dict) -> str | None:
         prompt = GENERATION_PROMPT.format(
             examples=shown,
             n=per_combo,
@@ -183,26 +190,32 @@ def generate(
         # produced hundreds of rows — but it must be *counted*, or the coverage
         # you think your axes give you is quietly smaller than you believe.
         try:
-            reply = chat(
-                cfg, prompt, timeout=timeout, max_retries=max_retries, stats=stats
-            )
+            return chat(cfg, prompt, timeout=timeout, max_retries=max_retries, stats=stats)
         except RuntimeError:
-            reply = ""
-            report.failed_combos += 1
+            return None
 
-        for line in reply.splitlines():
-            line = line.strip().strip("`")
-            if not line.startswith("{"):
-                continue
-            try:
-                raw.append({**json.loads(line), "_axes": combo})
-            except json.JSONDecodeError:
-                report.unparseable += 1
-        if progress:
-            progress(combo_number, len(combos))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        replies = pool.map(ask, combos)
+        for combo_number, (combo, reply) in enumerate(zip(combos, replies), 1):
+            if reply is None:
+                reply = ""
+                report.failed_combos += 1
+            for line in reply.splitlines():
+                line = line.strip().strip("`")
+                if not line.startswith("{"):
+                    continue
+                try:
+                    raw.append({**json.loads(line), "_axes": combo})
+                except json.JSONDecodeError:
+                    report.unparseable += 1
+            if progress:
+                progress(combo_number, len(combos))
 
     report.generated = len(raw)
-    kept, dropped = dedupe(raw, threshold=dedupe_threshold)
+    groups: dict = {}
+    for row in raw:
+        groups.setdefault(dedupe_by(row) if dedupe_by else None, []).append(row)
+    kept = [row for group in groups.values() for row in dedupe(group, threshold=dedupe_threshold)[0]]
     report.after_dedupe = len(kept)
 
     if validate:
