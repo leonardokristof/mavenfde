@@ -372,6 +372,17 @@ def _(mo):
     expose that two hundred paraphrases of your five examples never could.
 
     **Answer:**
+    My domain-specific axis is what the operator actually wants: fibre availability, the status of a request, how long it will take, who is responsible, or when the HAKOM stopwatch runs out. Fiberly answers a plain check from the template in code but hands a specific question to the model, and all five of my goldens are plain checks, so two hundred paraphrases would never contain "tko je zadužen za Vrbik 23?" as a first message. Only this axis shows whether Fiberly answers the question that was asked instead of dumping the full overview, and whether the model invents a contact or a date when the data has none.
+
+    Format something like this :
+
+    intent: [
+        "checking whether fibre is available at an address",
+        "asking what is happening with an open request",
+        "asking how long it will take",
+        "asking who is responsible for the case",
+        "asking when the HAKOM stopwatch runs out",
+    ],
     """)
     return
 
@@ -607,6 +618,7 @@ def _(mo):
     to decide.
 
     **Answer:**
+    In Fiberly most questions follow the same few sentence patterns and differ only in the address, city, ADM or WWMS number, so two rows can share almost every word and still be about different buildings with different answers. In my run the two pairs dropped at 0.15 were exactly that: "RE: RE: korisnik …, Zvonimirova 22, Bjelovar, nema signala" matched "FW: RE: RE: korisnik … (Lipa 4, Pula) javlja da nema interneta", and a complaint from Ivana Lučića 22, Zadar matched a question about when a connection will be built in Radnička 7, Split. That makes me want to raise the threshold to 0.8, and in the what got dropped table I would check whether the dropped row and the row it matched name the same building and ask the same thing; if the address, ID or fault differs, the drop was wrong.
     """)
     return
 
@@ -820,6 +832,7 @@ def _(mo):
     committing.
 
     **Answer:**
+    My seeds carry the pilot's answer template almost word for word: the status codes (HOMES PASSED - STREET), the task names (Završetak FTTH privoda), the project naming pattern (FTTH_SINJ_2) and closing lines like "Jesi li popunio optika interes?", which no regex flags but which anyone in Croatian FTTH would read as HT's internal system, sitting next to real street names like Vrbik 23, Zagreb. Before committing I would check that every address, ADM ID and status combination is invented, so a reader can recognise the domain but can't take any row as a fact about a real building, and the generation prompt would allow no person names at all, only roles.
     """)
     return
 
@@ -898,6 +911,7 @@ def _(mo):
     generated rows can be.)
 
     **Answer:**
+    The file is prototyping data: Haiku wrote both the operator messages and the answers, and nobody who judges Fiberly for real has checked a single output, so the dates, deadlines and contacts in it are plausible rather than true. One thing it cannot validate is that Fiberly handles a building whose records contradict each other, for example a register that says HOMES CONNECTED while an open WWMS request is still building the connection; none of my five seeds has conflicting data, so none of the generated rows can either.
     """)
     return
 
