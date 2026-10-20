@@ -48,6 +48,10 @@ An earlier run on the same day was thrown away for two reasons:
 
 The ID prefix and the "no ID" path for out-of-scope messages fixed both.
 
+126 rows carry a status the schema doesn't have, most often "IN DESIGN" (41). The axis value "in design or FTTA rollout, with no timeline" names a state the schema has no status for, so the model makes one up. They are kept, and the value needs a status named before the next run.
+
+A second file sits beside this one: `synthetic_sonnet.jsonl`, 1777 rows. Claude Sonnet 5.5 wrote the same 600 combinations as six Claude Code subagents, and the rows went through the same checks. The 14 rows that reused a golden's project names or street were removed. Which file Week 3 uses is still open. The comparison is in `02_Open_Weights/challenge/SUBMISSION.md`, and everything above describes Haiku's file.
+
 ## What it can validate
 
 - That Fiberly's parser finds the record however the operator gets to it: ADM, AAMS, a full address, an address without a city, a bare number, a follow-up or a reply inside a conversation, several IDs in one message.
