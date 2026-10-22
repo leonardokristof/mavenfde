@@ -68,6 +68,36 @@
       "open_requests": [
         {"aams_id": 60442718, "task": "Izvođenje Mini projekta", "task_status": "Parkirano", "task_started": "2026-05-04"}
       ]
+    },
+    {
+      "adm_id": 4120936, "street": "Strossmayerova", "house_number": "30", "suffix": "", "city": "Đakovo",
+      "fibre_status": "HOMES PASSED - HOUSE", "complex_connection": false, "project_name": "FTTH_DJAKOVO_2",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_DJAKOVO_2", "am": "AM za Osječko-baranjsku županiju",
+      "open_requests": [
+        {"aams_id": 52604117, "task": "Unos tehničkog rješenja za spajanje ", "task_status": "Dodijeljen", "task_started": "2026-08-11"}
+      ]
+    },
+    {
+      "adm_id": 6609214, "street": "Frankopanska", "house_number": "18", "suffix": "", "city": "Ogulin",
+      "fibre_status": "HOMES PASSED - STREET", "complex_connection": false, "project_name": "FTTH_OGULIN_1",
+      "activation_date": null, "regulated_zone": true,
+      "pm": null, "am": null,
+      "open_requests": [
+        {"aams_id": 47318820, "task": "FTTH akvizicija", "task_status": "Novo", "task_started": "2026-07-20"}
+      ]
+    },
+    {
+      "adm_id": 3907751, "street": "Preradovićeva", "house_number": "11", "suffix": "", "city": "Bjelovar",
+      "fibre_status": null, "complex_connection": false, "project_name": "FTTH_BJELOVAR_1",
+      "activation_date": null, "regulated_zone": true,
+      "pm": "PM projekta FTTH_BJELOVAR_1", "am": "AM za Bjelovarsko-bilogorsku županiju",
+      "open_requests": [
+        {"aams_id": 58842093, "task": "Završetak FTTH privoda", "task_status": "Dodijeljen", "task_started": "2026-09-01"}
+      ]
     }
-  ]
+  ],
+  "projects": {
+    "FTTH_OGULIN_1": {"pm": "PM projekta FTTH_OGULIN_1", "am": "AM za Karlovačku županiju"}
+  }
 }

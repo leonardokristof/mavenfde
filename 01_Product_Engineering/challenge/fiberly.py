@@ -21,6 +21,7 @@ DATA = json.loads((Path(__file__).parent / "sample_data.json").read_text(encodin
 TODAY = date.fromisoformat(DATA["snapshot_date"])  # a snapshot, so deadlines don't move between runs
 STOPWATCH_DAYS = 30
 ADDRESS_CONTACT = "koordinatoru za adresne podatke"
+REQUEST_CONTACT = "koordinator za FTTH zahtjeve"  # the fixed contact when nobody is on record for a request
 TECH_PROBLEM = "Trenutno imam tehnički problem, probaj ponovno za par minuta."
 OFF_TOPIC = "Mogu pomoći samo s mrežnom infrastrukturom."
 
@@ -32,6 +33,9 @@ STATUS = {
     "FTTA ROLLOUT": ("Optička mreža još nije izgrađena u tom području. Rok aktivacije nije definiran, ovisi o statusu projekta.", "", None),
 }
 COMPLEX = ("Optika je dostupna, ali su potrebni dodatni radovi.", "Uključenje se može završiti unutar 40 dana.", "do 40 dana")
+# No status in the forecast, as the pilot words it with and without an open request
+NO_STATUS = "Za ovu adresu nema podataka o dostupnosti optike u FTTH planu pokrivanja."
+NO_STATUS_NO_REQUEST = f"Adresa nije evidentirana u sustavu ili optika nije dostupna. Za potvrdu se javi {ADDRESS_CONTACT}."
 
 # (tasks, what is happening, deadline sentence, SLA days)
 TASK_GROUPS = [
@@ -172,15 +176,25 @@ def _fmt(d: date) -> str:
 
 
 def _to_whom(role: str) -> str:
-    return re.sub(r"^(PM|AM) ", r"\1-u ", role)
+    return re.sub(r"^(PM|AM) ", r"\1-u ", role).replace("koordinator ", "koordinatoru ", 1)
+
+
+def _clean(text: str | None) -> str:
+    """The sources pad task names and statuses with spaces, and some statuses carry an en dash."""
+    return " ".join((text or "").replace("–", "-").replace("—", "-").split())
 
 
 def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
     """Work out everything the answer says about one building."""
-    status = b["fibre_status"]
-    complex_street = b["complex_connection"] and status == "HOMES PASSED - STREET"
-    status_text, timeline_text, timeline = COMPLEX if complex_street else STATUS[status]
+    status = _clean(b["fibre_status"])
     request = b["open_requests"][0] if b["open_requests"] else None
+    if request:
+        request = {**request, "task": _clean(request["task"]), "task_status": _clean(request["task_status"])}
+    complex_street = b["complex_connection"] and status == "HOMES PASSED - STREET"
+    status_text, timeline_text, timeline = COMPLEX if complex_street else STATUS.get(status, ("", "", None))
+    if status not in STATUS:  # empty or unknown: say so, the rest of the answer still holds
+        status, status_text = None, NO_STATUS if request else NO_STATUS_NO_REQUEST
+    project = DATA["projects"].get(_clean(b["project_name"]), {})  # project-level contacts, when the address has none
 
     stopwatch_active, expires = False, None
     activated = date.fromisoformat(b["activation_date"]) if b["activation_date"] else None
@@ -209,7 +223,8 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
             if request["task_status"] == "Parkirano":
                 sentences.append(PARKED)  # a parked case has no reliable deadline
             elif due and TODAY > due:
-                days_late, escalate_to = (TODAY - due).days, b["pm"] or b["am"]
+                days_late = (TODAY - due).days
+                escalate_to = b["pm"] or b["am"] or project.get("pm") or project.get("am") or REQUEST_CONTACT
                 sentences.append(f"Vidim da je rok malo proklizao, {days_late} dana preko SLA. Možda ne bi bilo loše "
                                  f"gurnuti to prema {_to_whom(escalate_to)} da se stvar makne s mrtve točke.")
             elif deadline:
@@ -220,7 +235,7 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
         next_step = "Želiš li provjeriti status projekta?"
     elif status == "HOMES CONNECTED" or complex_street:
         next_step = "Jesi li već predao zahtjev za uključenje?"
-    else:
+    elif status:
         next_step = "Jesi li popunio optika interes?"
 
     notes = []
@@ -231,7 +246,8 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
     if by_request:
         summary = f"AAMS ID: {request['aams_id']} | TASK: {request['task']} | Naziv projekta: {b['project_name']}"
     else:
-        summary = f"ADM ID: {b['adm_id']} | Status: {display} | Naziv projekta: {b['project_name']}"
+        status_part = f" | Status: {display}" if display else ""  # the pilot leaves out a field it has no value for
+        summary = f"ADM ID: {b['adm_id']}{status_part} | Naziv projekta: {b['project_name']}"
         if request:
             summary += f" | AAMS ID: {request['aams_id']}"
 
@@ -245,7 +261,7 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
     )
     label = f"AAMS {request['aams_id']}, {_address(b)}" if by_request else _address(b)
     facts = {"label": label, "adm_id": b["adm_id"], "sentences": sentences + notes,
-             "next_step": next_step, "pm": b["pm"], "am": b["am"],
+             "next_step": next_step, "pm": b["pm"] or project.get("pm"), "am": b["am"] or project.get("am"),
              "aams_id": request["aams_id"] if request else None}
     return facts, building
 
