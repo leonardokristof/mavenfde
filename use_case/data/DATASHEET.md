@@ -113,3 +113,7 @@ No, they overlap in two places.
 **Record IDs:** a row's ID is its line number, `r0001` to `r2075`. The labels in `use_case/evals/retrieval.jsonl` and the `sources` in every answer point at these IDs, so the file is only ever appended to, never regenerated or reordered. SHA-256 of the 2075-row file: `e93591ae1313b4f7388e08e256be8f0d33be0758ba0d1be0426d507c538402db`.
 
 **What this corpus cannot show:** every building sits in one row, so a question that needs two records is rare here, while at work one answer joins two to six systems. And each row is an answer, not a source record, so it stands in for the tables Fiberly would read by key.
+
+**Found while labelling the Week 3 questions:**
+- No row holds an acquisition status (approved, rejected, new). The Week 2 axis was worded "whether a new service can be connected", and both models wrote exactly that. A question about acquisition can only be answered as "not available" here.
+- Only 11 of the 2075 rows have a house number with a suffix: 2 with a slash (`3/2`, `27/2`) and 9 with a letter (`16 A`, `30A`). Suffixes are among the pilot's edge cases, but the form axis never asked for them.
