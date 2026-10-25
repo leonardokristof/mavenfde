@@ -304,6 +304,9 @@ def _(mo):
 
     **Answer:**
 
+    For Fiberly, almost every question an operator asks needs exact text: an ADM ID, an AAMS number or an exact address with the house number. There is never a general answer.
+    Two sources will be common. Often the answer has to come from two completely different systems and be joined into one, for example matching an AAMS card to its ADM.
+    No. The information the agent checks lives in database tables, reached through a stable key: the ADM ID, the exact customer or the exact project name.
     ---
     ## Task 2 — Use one agent loop for both approaches
 
@@ -416,7 +419,7 @@ def _(mo):
     it says — and which approach makes that easier to do?
 
     **Answer:**
-
+    I think it is necessary to keep the exact document linked to the answer, so the user can double check the info. From the trace I would keep which tool was called and with what query, so it is clear what was searched, and the exact place the answer came from: the page and line from grep, or the page#section id from search_chunks. Characters and latency belong in the log, not in the answer. DCI makes this easier, because grep gives a page and a line and read_page names a whole page that doesn't change, while a chunk id points to a section that may have been cut at 1,000 characters. For Fiberly the source is the record itself, the ADM ID or AAMS number and the system it came from, so the operator can open it and check.
     ---
     ## Task 3 — Evaluate outcomes and behaviour
 
@@ -519,6 +522,8 @@ def _(mo):
     tools — not the model — that would bring it back?
 
     **Answer:**
+    What I noticed first: on Haiku 5.5 the RAG side always made two calls, where the course's run on Sonnet 5 mostly made one, and it read about twice as much, around 7,300 characters a question against 3,400. Haiku searches again even when the first search already had the answer, and every search returns four chunks of up to 1,000 characters, so the second call doubles the evidence. Same tools, different model, double the cost. For Fiberly the column that breaks first is evidence_chars, not latency: the latency target is 60 s and we measured a p95 of 2.9 s, but a plain answer costs about 822 input tokens today, and two searches would add roughly 2,000 more to a question that needs one record. The one change to the tools: when the question carries an ADM ID or an AAMS number, the tool fetches that one record by its key instead of a ranked top 4, so there is nothing left to search again.
+
 
     ---
     ## Task 4 — Inspect the difference
@@ -647,6 +652,8 @@ def _(mo):
     get approved, and what would change your mind?
 
     **Answer:**
+    For Fiberly the data sits in database tables, not in a wiki, and several roles use it: PMs, AMs, the helpdesk, field teams and sales support. List would be a bulk export of every building, so an operator gets no list at all; bulk lists are out of scope for v1 anyway. Search works only by an exact key, an ADM ID, an AAMS number or an address, and returns only the fields that role may see. Personal data, like the residents' phone numbers that sometimes sit in technician notes, is removed before anything comes back. Read returns one record by its key, through a read-only database user and with a row limit. All of this has to be enforced in the tool, with the identity of the person asking, because a gateway in front of the tool may only pass on which application is calling. The one I could get approved is a read by key without list. A ranked top-k search hands back other buildings nobody asked for, and Legal has to agree up front which data a model may process. What would change my mind: Legal allowing an operator to see every building in their own region, or finding that many real questions carry no ID at all. Then I would need search, with the per-user filter applied before ranking, not after.
+
 
     ---
     # Conclusion
