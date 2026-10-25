@@ -98,3 +98,6 @@ class Response(BaseModel):
     next_step: str | None = Field(
         default=None, description="At most one suggested next step or question"
     )
+    sources: list[str] = Field(
+        default_factory=list, description="IDs of the records the answer was grounded in"
+    )
