@@ -107,6 +107,14 @@ Local model: plausible for HT only on a GPU host inside the company. On the lapt
 
 ---
 
+## Week 3 · retrieval
+
+Personal laptop, *measured* on 27 October: the BM25 index over the 1,705 answered records builds in 0.05 s inside the app. The image, built from the lock with `rank-bm25` added, grew by 74 KB to 807 MB. The records are not in the image: they are mounted read-only at run time and the path comes from `CORPUS_PATH`, the same rule as the key. The hybrid I measured and did not ship embedded the corpus with a local multilingual model, 175,930 tokens for $0, and nothing left the machine. The Anthropic API has no embedding endpoint, so dense retrieval with one key means a local model or a second provider, and at work a second approval.
+
+At work the shipped technique needs no embedding model, no vector database and no index anyone has to own. It needs read access by key, an ADM ID, an AAMS number or an address, through the query layer the source databases already sit behind, offered as read-only tools that the company's agent platform calls through its API gateway. To settle for Week 9: who owns that connection and how fresh its data is; whether the gateway passes on the operator or only the calling app, because a filter on which buildings and fields a role may see has to sit in the tool, before anything is returned; and which endpoint is approved for the answer model, since the records hold addresses and contacts.
+
+---
+
 ## Week 9 — the full checklist
 
 <!--

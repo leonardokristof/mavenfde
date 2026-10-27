@@ -14,6 +14,7 @@ from datetime import date, timedelta
 from difflib import SequenceMatcher
 from pathlib import Path
 
+import records
 from llm import complete
 from schema import Building, OpenRequest, Request, Response
 
@@ -21,6 +22,7 @@ DATA = json.loads((Path(__file__).parent / "sample_data.json").read_text(encodin
 TODAY = date.fromisoformat(DATA["snapshot_date"])  # a snapshot, so deadlines don't move between runs
 STOPWATCH_DAYS = 30
 ADDRESS_CONTACT = "koordinatoru za adresne podatke"
+REQUEST_CONTACT = "koordinator za FTTH zahtjeve"  # the fixed contact when nobody is on record for a request
 TECH_PROBLEM = "Trenutno imam tehnički problem, probaj ponovno za par minuta."
 OFF_TOPIC = "Mogu pomoći samo s mrežnom infrastrukturom."
 
@@ -32,6 +34,9 @@ STATUS = {
     "FTTA ROLLOUT": ("Optička mreža još nije izgrađena u tom području. Rok aktivacije nije definiran, ovisi o statusu projekta.", "", None),
 }
 COMPLEX = ("Optika je dostupna, ali su potrebni dodatni radovi.", "Uključenje se može završiti unutar 40 dana.", "do 40 dana")
+# No status in the forecast, as the pilot words it with and without an open request
+NO_STATUS = "Za ovu adresu nema podataka o dostupnosti optike u FTTH planu pokrivanja."
+NO_STATUS_NO_REQUEST = f"Adresa nije evidentirana u sustavu ili optika nije dostupna. Za potvrdu se javi {ADDRESS_CONTACT}."
 
 # (tasks, what is happening, deadline sentence, SLA days)
 TASK_GROUPS = [
@@ -90,7 +95,7 @@ Rules:
 - An address needs street, house number and city. Keep the house number as typed, with its suffix ("12/1", "79A"). The house number is digits plus an optional "/" part or one letter; a city is never part of it. Write street and city in the nominative, with diacritics, as on a street sign. If the city is missing, intent "clarify" and ask only for the city. Never ask for a postal code.
 - Use the earlier turns. If the operator answers your question (a city, or "adm"/"aams"), merge it with what they said before. If they ask a follow-up with no new identifier ("tko je PM?", "koji je to tiket?"), reuse the identifier from the conversation, for example the ADM ID or AAMS ID in the last line of the previous answer.
 - Several addresses or IDs in one message: one lookup each, in the order given.
-- focus is "specific" only when the operator asks for one particular detail about a building or request (who the PM or AM is, when the stopwatch expires, which request or task it is, the project name). A plain check of an address, ADM ID or AAMS number is "overview".
+- focus is "specific" only when the operator asks for one particular detail about a building or request (who the PM or AM is, when the stopwatch expires, which request or task it is, the project name, whether the address is acquired, the project phase, the number of units). A plain check of an address, ADM ID or AAMS number is "overview".
 - A greeting, "pomoć" or a message with nothing to look up: intent "clarify", ask "Trebam adresu, ADM ID ili AAMS broj da bih provjerio."
 - Anything unrelated to fibre, addresses or requests: intent "off_topic".
 - If your last message asked "Jesi li mislio ...?" with an address and the operator says yes, look up that address.
@@ -102,6 +107,19 @@ You get the operator's question and, for each building, a label and sentences th
 - Never add facts, dates, numbers or deadlines that are not given. If the answer is not in the facts, say you don't have that information.
 - Plain text only: no markdown, no bullet points, no field names, no phrases like "na temelju podataka".
 - Several buildings: one short paragraph each, in the given order."""
+
+RECORDS_PROMPT = """You answer an internal operator's question about fibre at a building, in Croatian, as a colleague: direct, short, no greeting.
+You get the conversation and the records found for what the operator typed. Answer the operator's last message.
+- Use only what the records say. Take each fact in the record's own sentence: shorten it, never reword it. Never add facts, dates, numbers, deadlines or contacts that are not in them.
+- A role is a full answer to who is responsible ("PM projekta", "koordinator za FTTH zahtjeve"): give it, and don't say that a name is missing.
+- State the facts as your own ("Optika je dostupna."), never as what a record says, and never mention records ("zapis", "zapisi", "prema zapisu").
+- If the operator asks for something the records do not state, such as whether an address is acquired, the project phase or the number of units, write "Taj podatak nije evidentiran." and then what the records do say. Never work it out from another field: a connected building says nothing about acquisition. Mention a missing field only when it was asked for.
+- If a record ends with a question to the operator, like "Jesi li popunio optika interes?", end with that same question. Never answer it, and never add one that is not there.
+- A plain check: say what the record says. A specific question: answer only that, in one or two sentences. Name the ADM ID or AAMS number so they know which building you mean.
+- Several buildings: one short paragraph each.
+- Don't write the line with the IDs and the status (ADM ID: ... | Status: ...). It is added after your answer, word for word from the record.
+- Plain text only: no markdown and no record IDs."""
+PLAIN_CHECK = "a general check of the building"
 
 
 def _plain(text: str) -> str:
@@ -172,15 +190,25 @@ def _fmt(d: date) -> str:
 
 
 def _to_whom(role: str) -> str:
-    return re.sub(r"^(PM|AM) ", r"\1-u ", role)
+    return re.sub(r"^(PM|AM) ", r"\1-u ", role).replace("koordinator ", "koordinatoru ", 1)
+
+
+def _clean(text: str | None) -> str:
+    """The sources pad task names and statuses with spaces, and some statuses carry an en dash."""
+    return " ".join((text or "").replace("–", "-").replace("—", "-").split())
 
 
 def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
     """Work out everything the answer says about one building."""
-    status = b["fibre_status"]
-    complex_street = b["complex_connection"] and status == "HOMES PASSED - STREET"
-    status_text, timeline_text, timeline = COMPLEX if complex_street else STATUS[status]
+    status = _clean(b["fibre_status"])
     request = b["open_requests"][0] if b["open_requests"] else None
+    if request:
+        request = {**request, "task": _clean(request["task"]), "task_status": _clean(request["task_status"])}
+    complex_street = b["complex_connection"] and status == "HOMES PASSED - STREET"
+    status_text, timeline_text, timeline = COMPLEX if complex_street else STATUS.get(status, ("", "", None))
+    if status not in STATUS:  # empty or unknown: say so, the rest of the answer still holds
+        status, status_text = None, NO_STATUS if request else NO_STATUS_NO_REQUEST
+    project = DATA["projects"].get(_clean(b["project_name"]), {})  # project-level contacts, when the address has none
 
     stopwatch_active, expires = False, None
     activated = date.fromisoformat(b["activation_date"]) if b["activation_date"] else None
@@ -209,7 +237,8 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
             if request["task_status"] == "Parkirano":
                 sentences.append(PARKED)  # a parked case has no reliable deadline
             elif due and TODAY > due:
-                days_late, escalate_to = (TODAY - due).days, b["pm"] or b["am"]
+                days_late = (TODAY - due).days
+                escalate_to = b["pm"] or b["am"] or project.get("pm") or project.get("am") or REQUEST_CONTACT
                 sentences.append(f"Vidim da je rok malo proklizao, {days_late} dana preko SLA. Možda ne bi bilo loše "
                                  f"gurnuti to prema {_to_whom(escalate_to)} da se stvar makne s mrtve točke.")
             elif deadline:
@@ -220,7 +249,7 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
         next_step = "Želiš li provjeriti status projekta?"
     elif status == "HOMES CONNECTED" or complex_street:
         next_step = "Jesi li već predao zahtjev za uključenje?"
-    else:
+    elif status:
         next_step = "Jesi li popunio optika interes?"
 
     notes = []
@@ -231,7 +260,8 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
     if by_request:
         summary = f"AAMS ID: {request['aams_id']} | TASK: {request['task']} | Naziv projekta: {b['project_name']}"
     else:
-        summary = f"ADM ID: {b['adm_id']} | Status: {display} | Naziv projekta: {b['project_name']}"
+        status_part = f" | Status: {display}" if display else ""  # the pilot leaves out a field it has no value for
+        summary = f"ADM ID: {b['adm_id']}{status_part} | Naziv projekta: {b['project_name']}"
         if request:
             summary += f" | AAMS ID: {request['aams_id']}"
 
@@ -245,7 +275,7 @@ def _facts(b: dict, asked_by_request: bool) -> tuple[dict, Building]:
     )
     label = f"AAMS {request['aams_id']}, {_address(b)}" if by_request else _address(b)
     facts = {"label": label, "adm_id": b["adm_id"], "sentences": sentences + notes,
-             "next_step": next_step, "pm": b["pm"], "am": b["am"],
+             "next_step": next_step, "pm": b["pm"] or project.get("pm"), "am": b["am"] or project.get("am"),
              "aams_id": request["aams_id"] if request else None}
     return facts, building
 
@@ -331,4 +361,71 @@ def solve(request: Request) -> Response:
 
     print(f"fiberly: {response.outcome}, {len(response.buildings)} building(s), "
           f"{time.time() - started:.1f} s, tokens in {tokens['in']} out {tokens['out']}", flush=True)
+    return response
+
+
+def _mentions(text: str, name: str) -> bool:
+    q = _plain(name)
+    return bool(q) and q[: max(5, len(q) - 3)] in _plain(text)
+
+
+def _records_for(lookup: dict) -> list[dict]:
+    if lookup.get("type") in ("adm", "aams"):
+        return records.by_number(str(lookup.get("number", "")).strip())
+    house = set(records.tokenize(str(lookup.get("house_number", ""))))
+    query = " ".join(str(lookup.get(key, "")) for key in ("street", "house_number", "city"))
+    heads = [(r, r["output"].split("\n")[0].split(":")[0]) for r in records.search(query, 20)]
+    return [r for r, head in heads if house and house <= set(records.tokenize(head))
+            and _mentions(head, lookup.get("street", "")) and _mentions(head, lookup.get("city", ""))][:4]
+
+
+def solve_from_records(request: Request, usage: dict | None = None) -> Response:
+    usage = {} if usage is None else usage
+    usage.update({"in": 0, "out": 0, "usd": 0.0, "lookups": 0, "chars": 0})
+    started = time.time()
+
+    def ask_model(system: str, messages: list[dict]) -> str:
+        text, used = complete(system, messages)
+        for key in ("in", "out", "usd"):
+            usage[key] += used[key]
+        return text
+
+    try:
+        turns = [t.model_dump() for t in request.history] + [{"role": "user", "content": request.message}]
+        parsed = _json(ask_model(PARSE_PROMPT, turns))
+        if parsed.get("intent") == "off_topic":
+            response = Response(outcome="out_of_scope", answer=OFF_TOPIC)
+        elif parsed.get("intent") != "lookup" or not parsed.get("lookups"):
+            question = parsed.get("ask") or "Trebam adresu, ADM ID ili AAMS broj da bih provjerio."
+            response = Response(outcome="needs_clarification", answer=question, next_step=question)
+        else:
+            typed = " ".join(t["content"] for t in turns if t["role"] == "user")
+            found, missing = [], []
+            for lookup in parsed["lookups"]:
+                usage["lookups"] += 1
+                hits = _records_for(_typed_suffix_only(lookup, typed) if lookup.get("type") == "address" else lookup)
+                found += [r for r in hits if r not in found]
+                if not hits:
+                    missing.append(_not_found(lookup))
+            found = found[:4]
+            context = "\n\n".join(r["output"] for r in found)
+            usage["chars"] = len(context)
+            if not found:
+                response = Response(outcome="not_found", answer=" ".join(missing))
+            elif parsed.get("focus") != "specific" and all(r["axes"]["intent"] == PLAIN_CHECK for r in found):
+                response = Response(outcome="answered", answer="\n\n".join([context, *missing]), sources=[r["id"] for r in found])
+            else:
+                conversation = "\n".join(f"{t['role']}: {t['content']}" for t in turns)
+                text = ask_model(RECORDS_PROMPT, [{"role": "user", "content": f"Razgovor:\n{conversation}\n\nZapisi:\n{context}"}])
+                is_ids = re.compile(r"\s*(ADM|AAMS) ID:").match
+                text = "\n".join(line for line in text.splitlines() if line.strip() and not is_ids(line))
+                ids = [line for r in found for line in r["output"].splitlines()[1:] if is_ids(line)]
+                response = Response(outcome="answered", answer="\n".join(filter(None, [text, *ids, *missing])),
+                                    sources=[r["id"] for r in found])
+    except Exception as exc:
+        print(f"fiberly records: error {type(exc).__name__}: {exc}", flush=True)
+        response = Response(outcome="error", answer=TECH_PROBLEM)
+
+    print(f"fiberly records: {response.outcome}, sources {response.sources}, {time.time() - started:.1f} s, "
+          f"tokens in {usage['in']} out {usage['out']}, ${usage['usd']:.5f}", flush=True)
     return response

@@ -98,3 +98,22 @@ No, they overlap in two places.
 - **The data.** The goldens are the seeds of this file, and Week 8 fine-tunes on this file. From then on the model has learned from the goldens' wording, and they no longer measure it independently. Before Week 8 I need goldens that nothing was generated from.
 
 **Overlap between `golden.jsonl` and this file, by the dedupe measure:** 0 rows at 0.7. The closest is 0.65, conversations that copy the shape of golden 4. At 0.5 there are 10 rows, at 0.4 there are 24.
+
+## Week 3: the corpus retrieval runs over
+
+**File:** `synthetic_sonnet.jsonl`, 2075 rows. Sonnet's 1777 rows from Week 2, then 298 rows for two record states the Week 1 review showed were missing: an overdue request with no PM or AM on the address, and a building with an empty fibre status.
+**Why this file and not `synthetic_v1`:** Sonnet's messages read more like the ones operators send, its IDs never collide, and the 14 rows that reused the goldens' values were already taken out in Week 2.
+**How the 298 were made:** `03_Retrieval/challenge/topup.py` builds 100 combinations, the two new states crossed with the Week 2 paths, forms and intents, and four Sonnet 5.5 subagents in Claude Code wrote three rows each, with the same instruction as in Week 2. The axes are Week 2's, and IDs start at prefix 700 so they cannot meet the old ones. They went through the same checks: 301 written, 0 unparseable, 299 after dedupe, 299 schema-valid, 298 after removing a row that reused a golden's value.
+**What I checked by hand on the new rows:**
+- all 150 empty-status rows carry the pilot's sentence word for word, 107 with an open request and 43 without, and none prints a status;
+- the overdue rows name the project's PM or AM or the coordinator for requests, except a few that answer only the one field they were asked about;
+- no 6-digit or longer ID appears in more than one row of the whole file. Two rows use a prefix one digit off, and their IDs are still unique;
+- no person names. The one hit was the town Vela Luka.
+
+**Record IDs:** a row's ID is its line number, `r0001` to `r2075`. The labels in `use_case/evals/retrieval.jsonl` and the `sources` in every answer point at these IDs, so the file is only ever appended to, never regenerated or reordered. SHA-256 of the 2075-row file: `e93591ae1313b4f7388e08e256be8f0d33be0758ba0d1be0426d507c538402db`.
+
+**What this corpus cannot show:** every building sits in one row, so a question that needs two records is rare here, while at work one answer joins two to six systems. And each row is an answer, not a source record, so it stands in for the tables Fiberly would read by key.
+
+**Found while labelling the Week 3 questions:**
+- No row holds an acquisition status (approved, rejected, new). The Week 2 axis was worded "whether a new service can be connected", and both models wrote exactly that. A question about acquisition can only be answered as "not available" here.
+- Only 11 of the 2075 rows have a house number with a suffix: 2 with a slash (`3/2`, `27/2`) and 9 with a letter (`16 A`, `30A`). Suffixes are among the pilot's edge cases, but the form axis never asked for them.

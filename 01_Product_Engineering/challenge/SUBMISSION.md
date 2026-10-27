@@ -148,3 +148,27 @@ The napkin math, the p95 target and the three swap lines are under `## Bring it 
 end of the [challenge README](./README.md). In short: about $0.002 to $0.007 a question on
 Claude Sonnet 5.5 against €1.83 to €4.75 of an operator's time, a measured p95 of 2.9 s against
 a 60 s target, and reliability, not cost, is what could stop it being used.
+
+## After the review
+
+The review showed that the charter's promise, an overdue request flagged with someone to
+contact, held only on clean rows. My nine sample buildings were all clean, so the goldens never
+hit the problems my own data profile lists. I added three buildings that have them and changed
+the code in three places:
+
+- Task names, task statuses and fibre statuses are compared without padding spaces, the way the
+  pilot compared them, and an en dash in a status counts as a hyphen. This also fixes a parked
+  task with a trailing space, which used to be reported as late.
+- The contact goes PM, AM, the project's PM, the project's AM, and then the fixed contact for
+  requests with nobody on record. Before, it stopped at AM, and with both empty the code crashed.
+- An empty status gets the pilot's sentence for a building with no forecast data, and the rest
+  of the answer stays. The summary line leaves the status out.
+
+| Building | Before | After |
+| --- | --- | --- |
+| Strossmayerova 30, Đakovo: task name with a trailing space, 23 days late | "Task 'Unos tehničkog rješenja za spajanje ' je u tijeku, ali nemam detaljnu definiciju za ovu vrstu zadatka." No days late, no contact | "Vidim da je rok malo proklizao, 23 dana preko SLA. Možda ne bi bilo loše gurnuti to prema PM-u projekta FTTH_DJAKOVO_2 …" |
+| Frankopanska 18, Ogulin: 65 days late, no PM or AM on the address | "Trenutno imam tehnički problem, probaj ponovno za par minuta." | "… 65 dana preko SLA. Možda ne bi bilo loše gurnuti to prema PM-u projekta FTTH_OGULIN_1 …", taken from the project |
+| Preradovićeva 11, Bjelovar: no fibre status, open request still in time | "Trenutno imam tehnički problem, probaj ponovno za par minuta." | "Za ovu adresu nema podataka o dostupnosti optike u FTTH planu pokrivanja. Trenutno traju radovi na privodu … Prosječno vrijeme završetka je do 90 dana." |
+
+The Đakovo building is golden 6. With the model's parsing step replaced by a fixed lookup, all
+six goldens match word for word, so the old five did not change.

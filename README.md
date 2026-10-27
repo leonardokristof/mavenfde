@@ -6,6 +6,7 @@
 > | --- | --- | --- |
 > | 1 · Product engineering | ✅ submitted | [Submission](01_Product_Engineering/challenge/SUBMISSION.md) · [Charter](use_case/CHARTER.md) · [Goldens](use_case/evals/golden.jsonl) · [Video](https://github.com/leonardokristof/mavenfde/releases/tag/week-1) |
 > | 2 · Open weights | ✅ submitted, Step 6 review after 23 October | [Submission](02_Open_Weights/challenge/SUBMISSION.md) · [Datasheet](use_case/data/DATASHEET.md) · [Axes](02_Open_Weights/challenge/generate.py) · [Decisions](use_case/decisions.md) |
+> | 3 · Retrieval | ✅ submitted | [Submission](03_Retrieval/challenge/SUBMISSION.md) · [Endpoint](01_Product_Engineering/challenge/app.py) · [Labels](use_case/evals/retrieval.jsonl) · [Decisions](use_case/decisions.md) |
 
 ---
 
@@ -143,6 +144,7 @@ Open a notebook:
 ```bash
 make nb F=01_Product_Engineering/sessions/S1_Enterprise_Dev_Environment.py
 make nb F=02_Open_Weights/sessions/S3_Local_Inference_Fundamentals.py
+make nb F=03_Retrieval/sessions/S5_Agentic_Retrieval.py
 ```
 
 That runs it in its own sandboxed environment from the dependencies declared
