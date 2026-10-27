@@ -1031,7 +1031,7 @@ def _(mo):
     in your own corpus — and what about that content decides it.
 
     **Answer:**
-
+    The notebook has three ways. A: a vision model describes each chart once, and the caption is indexed as ordinary text. B: CLIP puts pixels and words in one shared space, so the question is compared straight to the image, with no caption at all. C: separate stores, a text embedder for the text and CLIP for the images, with the two lists merged by rank. Fiberly has no non-text content today. Everything it reads is database fields and technicians' notes, which are already text. The first thing to arrive would be screenshots that operators paste from AAMS or FIS into the chat. I would start with A, with OCR as the parser rather than a vision model, because a screenshot of a system screen is text rendered as pixels, and what matters on it is an ADM ID, an AAMS number or a task status. CLIP can tell that an image is a screenshot, but it cannot read the number, and operators search by exactly that number. In Fiberly the screenshot also comes in with the question, not in the corpus, so the parse turns it into an ID and the normal lookup by key does the rest.
     ### ❓ Question #6
 
     Strategy B found the latency chart from pixels alone, yet in the unified
@@ -1042,6 +1042,7 @@ def _(mo):
     corpus, and what narrows it first*.
 
     **Answer:**
+    The first weakness is the modality gap. In CLIP's space, text vectors sit close to each other and image vectors sit somewhere else, so a text question lands nearer to any memo than to the best chart, and in one mixed ranking the memo wins. What compensates is not mixing them: filter by modality, or keep one store per modality and merge the lists by rank, which is Strategy C. The second weakness is that CLIP knows what a latency chart looks like but cannot read 240 ms off it. An embedding keeps what the picture is about, not the values in it. What compensates is narrow, then read: at answer time the vision model gets the retrieved chart's pixels and reads the number itself. So the model that never sees the whole corpus is the vision model, the expensive reader. It gets three candidates, and the cheap embedders and the rank fusion narrow the corpus down to them first. Fiberly has the same shape without images. BM25 narrows 2,075 records to the top four, and Haiku reads about 2,500 characters a question, never the corpus.
     """)
     return
 
@@ -1185,7 +1186,7 @@ def _(mo):
     would verify a model's reading of them*.
 
     **Answer:**
-
+    Because the caption is the parser's reading, made once when the chart was indexed, and the parse check in Task 2 shows why it can't be trusted on its own: its "missed" and "invented" columns count the numbers the parse left out or made up. A caption is good enough to find the chart, but the answer has to come from the source. The reader looks at the pixels, so it can read the exact value the question asks for, even one the caption never wrote down, and the citation points to the original file, not to a summary of it. For Fiberly this matters even more, because operators search by identifiers, not by meaning: an ADM ID, an AAMS number, a request card or a house number like 3/2. One misread digit is not a small error. It is another building, and the answer would be confidently right about the wrong one, with that building's stopwatch and deadlines. What would verify a reading is code, not a second model. The number has to fit the format, it has to exist in the address register or in AAMS, and the record it finds has to match what else is on the screenshot, the address or the task. A reading that fails any of these goes back to the operator as a question, never into the answer.
     ---
     ## Task 7 — Measure it, and probe it with your own queries
 
@@ -1522,6 +1523,7 @@ def _(mo):
     right — and what does that say about adding a lexical index alongside?
 
     **Answer:**
+    Raw scores from two embedders don't share a scale. In the one-step version the text store gave the memos about 0.65 and CLIP gave the right chart 0.33, and no memo held the ticket count, so a merge by score would have thrown the answer away. A rank means the same thing in both lists, so RRF merges by rank. All ten of my questions carry a number or a name: six an ADM or AAMS number, four an address with a house number, and the business owner's five do too. For those the lexical list is the one that's right. On my own records, dense retrieval put the right record first for none of the ten and in the top three only twice, and fusing it with BM25 pushed exact matches out, so the hybrid passed 26 of 30 against 29 for BM25 alone. For Fiberly a lexical index isn't something to add next to embeddings. It is the index, with an exact lookup by key in front of it.
 
     ---
     # Conclusion
