@@ -217,11 +217,7 @@ The retrieval row and the four answers about non-text content are in
 
 ## Step 6: the demo
 
-I showed the business owner of the tool the first golden example, the question and Fiberly's answer, and
-asked the three questions. They would act on it, since it says whom to contact and what happens next. The
-answer and its source sound convincing, and they would trust it without checking, because checking takes
-too long today. They had nothing to add.
-
+I showed the business owner of the tool the first golden example, the question and Fiberly's answer.
 Then they wrote five questions of their own, the way they would type them, and said what they expect back.
 The questions are in their words, with the ID they made up and the two real addresses they typed swapped
 for records in the corpus, as in Step 1:
@@ -253,13 +249,16 @@ made-up ID and the two real addresses are not in synthetic data, and none offere
 
 The run cost $0.0538, and the five questions as typed $0.0008.
 
+**Their answers to the three questions**, after reading the endpoint's answers to their own five: they would
+act on them, since they say whom to contact and what the next steps are. The answers and their sources sound
+convincing, and they would trust them even without checking, because checking takes too much of their time
+today. They had nothing to add.
+
 **What it changed:** their five questions are q11 to q15 in
 [`retrieval.jsonl`](../../use_case/evals/retrieval.jsonl), so Week 4 scores them too. All five ask for the
 same thing: everything the systems know about the case, listed. The corpus cannot give that, because it
 holds no earlier work on a request and no technicians' notes, and a plain check is two or three sentences.
-That is the answer format to change in Week 4, with the request's task history and the notes from Pagesnap
-as the fields it needs. The rows are in [`stakeholders.md`](../../use_case/stakeholders.md) and
-[`decisions.md`](../../use_case/decisions.md).
-
-**Still open:** they have not yet seen the endpoint's answers to their own five questions. Showing them
-those answers and asking the first two questions again closes the loop.
+Since they would act on today's answers, that is an improvement for Week 4, not a blocker, with the
+request's task history and the notes from Pagesnap as the fields it needs. And because they would not check
+the source, the check that a record matches the typed ID or address stays a rule. The rows are in
+[`stakeholders.md`](../../use_case/stakeholders.md) and [`decisions.md`](../../use_case/decisions.md).
