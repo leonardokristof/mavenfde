@@ -54,12 +54,14 @@ Week 4 harness and Week 6, not to a retrieval test.
 ## Step 3: measuring the techniques
 
 Three techniques over the same records, through Session 5's agent loop: Session 5's two
-interfaces, and a hybrid built from Session 6's pieces as the third.
+interfaces, and a hybrid built from Session 6's pieces as the third. The fourth row is the pipeline
+Step 4 ships, scored with the same labels and the same check.
 
 ```bash
 uv run python 03_Retrieval/challenge/corpus.py recall   # retrieval only, no model calls
 uv run python 03_Retrieval/challenge/wiki.py build      # the wiki DCI reads
-uv run python 03_Retrieval/challenge/measure.py 3        # three approaches, 10 questions, 3 runs, priced in $
+uv run python 03_Retrieval/challenge/measure.py 3        # all four, 10 questions, 3 runs, priced in $
+uv run python 03_Retrieval/challenge/measure.py 3 Pipeline   # only the endpoint's pipeline
 ```
 
 **Before any model call, retrieval alone** (is the labelled record in the top k, for the 9 questions that have one):
@@ -84,28 +86,33 @@ uv run python 03_Retrieval/challenge/measure.py 3        # three approaches, 10 
 
 **The wiki DCI needs** had to be made: one page per record, one page per city and an index of cities. It builds in 0.2 s into 2,388 pages: 2,075 records, 311 cities, the index (12 KB) and a page for records with no building. 52 records with an address written unusually ("Lećevica, Sjenokoša 17") are on no city page, and only `grep` reaches them. At work this index would need an owner, and that goes into Step 5.
 
-**Results**, 10 questions × 3 approaches × 3 runs, 27 October:
+**Results**, 10 questions × 4 approaches × 3 runs, 27 October:
 
 | Approach | Pass | Cited the record | Calls | Evidence chars | Latency | $ per question | $ total |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Agentic RAG (BM25) | **29/30** | 27/27 | 2.1 | 2,498 | 3.7 s | **$0.00048** | $0.0145 |
-| DCI Wiki | **29/30** | 27/27 | 3.8 | 13,434 | 5.0 s | $0.00244 | $0.0731 |
+| Agentic RAG (BM25) | 29/30 | 27/27 | 2.1 | 2,498 | 3.7 s | $0.00048 | $0.0145 |
+| DCI Wiki | 29/30 | 27/27 | 3.8 | 13,434 | 5.0 s | $0.00244 | $0.0731 |
 | Hybrid RAG (BM25 + dense) | 26/30 | 23/27 | 2.3 | 2,620 | 4.0 s | $0.00054 | $0.0161 |
+| **Pipeline**, the Step 4 endpoint | **30/30** | 27/27 | 1.0 | 254 | 2.3 s | **$0.00021** | $0.0063 |
 
-| Question | Predicted | Agentic RAG | DCI Wiki | Hybrid RAG |
-| --- | --- | --- | --- | --- |
-| q01 ADM, empty status | either | 3/3 | 3/3 | 3/3 |
-| q02 acquisition, field missing | either | 2/3 | 2/3 | 2/3 |
-| q03 stopwatch | either | 3/3 | 3/3 | **0/3** |
-| q04 address, polite | RAG | 3/3 | 3/3 | 3/3 |
-| q05 house number 3/2 | DCI | 3/3 | 3/3 | 3/3 |
-| q06 no diacritics | RAG | 3/3 | 3/3 | 3/3 |
-| q07 card to ADM | either | 3/3 | 3/3 | 3/3 |
-| q08 contact, no PM | either | 3/3 | 3/3 | 3/3 |
-| q09 follow-up | either | 3/3 | 3/3 | 3/3 |
-| q10 address not found | DCI | 3/3 | 3/3 | 3/3 |
+| Question | Predicted | Agentic RAG | DCI Wiki | Hybrid RAG | Pipeline |
+| --- | --- | --- | --- | --- | --- |
+| q01 ADM, empty status | either | 3/3 | 3/3 | 3/3 | 3/3 |
+| q02 acquisition, field missing | either | 2/3 | 2/3 | 2/3 | 3/3 |
+| q03 stopwatch | either | 3/3 | 3/3 | **0/3** | 3/3 |
+| q04 address, polite | RAG | 3/3 | 3/3 | 3/3 | 3/3 |
+| q05 house number 3/2 | DCI | 3/3 | 3/3 | 3/3 | 3/3 |
+| q06 no diacritics | RAG | 3/3 | 3/3 | 3/3 | 3/3 |
+| q07 card to ADM | either | 3/3 | 3/3 | 3/3 | 3/3 |
+| q08 contact, no PM | either | 3/3 | 3/3 | 3/3 | 3/3 |
+| q09 follow-up | either | 3/3 | 3/3 | 3/3 | 3/3 |
+| q10 address not found | DCI | 3/3 | 3/3 | 3/3 | 3/3 |
 
 The run cost **$0.1037**: 825,421 tokens in and 42,264 out on Haiku. The first run on 25 October, with the two Session 5 techniques, cost $0.0816 and gave 28/30 and 27/30. Between the two runs q02 went from 1/3 and 0/3 to 2/3 and 2/3, so one run of that question is noise, not a result.
+
+The pipeline ran on its own later the same evening: $0.0063, 37,455 tokens in and 5,121 out. It is not an
+agent loop, so its calls are lookups in the store, one per ID or address in the message. It makes two model
+calls at most, the parse and the answer to a specific question, and a plain check makes one.
 
 **Embedding tokens: 175,930, measured** with the model's own tokenizer for the 2,075 records, plus a few per query. The model runs locally, so it cost $0. 93 records are longer than the model's 128-token limit and were cut. Every change to the chunking means embedding them all again.
 
@@ -115,6 +122,7 @@ The run cost **$0.1037**: 825,421 tokens in and 42,264 out on Haiku. The first r
 - Dense: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` through fastembed, 384 dimensions, cosine. Session 6's default `bge-small-en` is English-only, and the records are Croatian.
 - Hybrid: Session 6's reciprocal rank fusion, k = 60, both lists weighted equally. I did not tune it on these ten questions.
 - Tools: `search_chunks` returns 4 records by default, at most 8, each cut at 1,000 characters. `grep_wiki` returns at most 40 lines and `read_page` at most 12,000 characters.
+- Pipeline: the Week 1 parse prompt, then a lookup by the exact number or BM25's top 20 for an address with the address check, and at most 4 records for the answer. It calls the model the way the app does, at the provider's default temperature.
 
 **Four labels fixed after reading the traces**, and the same saved answers scored again. Every one was a keyword problem in an answer that was right:
 - q08 expected "37 dana" as well as the coordinator. The question asks who, and the answers named the coordinator without repeating the delay. It now asks for "koordinator".
@@ -128,3 +136,90 @@ The run cost **$0.1037**: 825,421 tokens in and 42,264 out on Haiku. The first r
 - **The one failure all three share is answering, not finding.** On q02 Haiku sometimes reads "zgrada je spojena" and concludes the address is acquired, instead of saying the acquisition status is not recorded. The fix belongs in the endpoint's prompt in Step 4.
 - **My predictions for q05 and q06 were wrong.** I expected the suffix to need DCI and the missing diacritics to need DCI's reading. The folded tokenizer handles both for BM25.
 - **All three declined the missing address**, 3 of 3 each, even though the search handed them a near miss in the same town.
+- **The pipeline passes all 30 at less than half of BM25 RAG's price.** It needs no search for the six ID questions, because every number in the corpus belongs to exactly one record, and the model reads 254 characters on average instead of 2,498. Part of its q02 result is its prompt: it carries the rule for a field no record holds, which the agents' Session 5 prompt does not.
+
+## Step 4: the endpoint
+
+`answer_from_records` in [`app.py`](../../01_Product_Engineering/challenge/app.py), next to the Week 1
+endpoint. It is the Week 1 pipeline with the records in place of the nine sample buildings, and it returns
+the same `Response`:
+
+1. The model parses the message with the Week 1 parse prompt: an ADM ID, an AAMS or card number, an address, a question back, or off topic.
+2. Code finds the records. An ID is looked up exactly, since every number in the corpus belongs to one record. An address goes through BM25, and of its top 20 code keeps only a record whose first line has the same street, house number and city. A near miss never reaches the model.
+3. Nothing found: `not_found`, in the Week 1 sentence, with no sources and no second model call.
+4. A plain check gets the record's own text word for word, the way Week 1 answers from its template. A specific question gets an answer the model writes from at most four records, and code adds the record's ID line (ADM ID | Status | Naziv projekta) from the record itself.
+5. `sources` is set by code. It lists the records the answer was built from, never the ones the model says it used.
+
+[`records.py`](../../01_Product_Engineering/challenge/records.py) holds the records and the two ways into
+them, by number and by text. The rest is `solve_from_records` in
+[`fiberly.py`](../../01_Product_Engineering/challenge/fiberly.py). Step 3's scripts import the same
+`records.py`, so the measurement and the app search the same way. The docstring is written for the agent
+that will read it as the whole interface in Week 5.
+
+```bash
+cd 01_Product_Engineering/challenge
+uv run python app.py
+
+docker build -t challenge .
+docker run -p 7860:7860 --env-file ../../.env \
+  -v "$PWD/../../use_case/data/synthetic_sonnet.jsonl:/data/corpus.jsonl:ro" challenge
+```
+
+**Through the container's API**, 27 October, the ten questions and three more:
+
+| Question | Outcome | Sources | Latency |
+| --- | --- | --- | --- |
+| q01 ADM, empty status | answered | r1930 | 2.2 s |
+| q02 acquisition, field missing | answered | r0305 | 3.1 s |
+| q03 stopwatch | answered | r0580 | 2.7 s |
+| q04 address, polite | answered | r0316 | 1.0 s |
+| q05 house number 3/2 | answered | r0882 | 1.4 s |
+| q06 no diacritics | answered | r1263 | 2.1 s |
+| q07 card to ADM | answered | r0554 | 4.0 s |
+| q08 contact, no PM | answered | r1793 | 3.6 s |
+| q09 follow-up | answered | r0670 | 3.9 s |
+| q10 address not found | not_found | none | 1.0 s |
+| "tko je PM?" with the ADM only in `history` | answered | r0670 | 2.0 s |
+| a bare number, 4008845 | needs_clarification | none | 1.2 s |
+| a question about restaurants | out_of_scope | none | 1.0 s |
+
+Every source is the labelled record.
+
+**On a decline.** An address in no record, q10, comes back as `not_found` with no sources: "Adresa Kolodvorska
+140, Ilok nije evidentirana u sustavu. Provjeri je li ispravno upisana, a za potvrdu se javi koordinatoru za
+adresne podatke." No answer model is called. A field no record holds, q02, gets the building with "Taj
+podatak nije evidentiran." in front of what the record does say.
+
+**Reading the answers found three things the score did not:**
+- The model rewrote the record's ID line. On q08 it labelled AAMS 71004827 as an ADM ID, and on q01 it dropped the AAMS ID. Code now writes that line from the record and removes any the model writes.
+- The parser called "je li adresa adm 2063318 akvizirana" a plain check, so the template answer said the building is connected and nothing about acquisition. The Week 1 endpoint had the same flaw. The parse prompt now lists acquisition, the project phase and the number of units as specific questions, and the six goldens still match word for word in 18 of 18 runs.
+- In one run of three on q08 the model still turns "nema ga ni projekt" (the project has no PM either) into "nema ni projekta" (there is no project). The score passes it, because it only checks for "koordinator". It goes into the Week 4 harness as a phrase that must not appear.
+
+**Checked without a model:** 1,649 of the 1,653 addresses the wiki can read find their own record through
+the address check. The other 4 are not addresses ("AMS 41603851, Ulica"). The same addresses with a house
+number 700 higher find nothing, in 1,653 of 1,653. Every ADM ID finds its record, 1,390 of 1,390. The index
+over the 1,705 answered records builds in 0.05 s.
+
+**The container** is built from the lock with `rank-bm25` added. It grew by 74 KB, to 807 MB, and runs as
+`appuser`. The records are not in the image: they are mounted read-only and the path comes from
+`CORPUS_PATH`. Without the mount the app still starts and prints that the records are missing. The new
+endpoint then answers `error`, and the Week 1 endpoint keeps working.
+
+Getting here cost about $0.045 in model calls, most of it seven runs of the pipeline while I fixed what
+the answers showed.
+
+## Step 5: the decision
+
+The retrieval row and the four answers about non-text content are in
+[`decisions.md`](../../use_case/decisions.md).
+
+## Step 6: the demo
+
+I showed the business owner of the tool the first golden example, the question and Fiberly's answer, and
+asked the three questions. They would act on it, since it says whom to contact and what happens next. The
+answer and its source sound convincing, and they would trust it without checking, because checking takes
+too long today. They had nothing to add. The row is in [`stakeholders.md`](../../use_case/stakeholders.md),
+and what it changed is in `decisions.md`.
+
+No five questions of their own were typed, so `retrieval.jsonl` still has the ten. That is the gap to close
+first: a session where operators who do this every day type their own questions into `answer_from_records`.

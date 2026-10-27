@@ -599,3 +599,9 @@ challenge, which carries the full detail.
 
 Everything after this week assumes your app answers from your data and can say
 where the answer came from.
+
+---
+
+## What the endpoint does when it should decline
+
+`answer_from_records` declines in code, before any answer is written: an ID no record has, or an address with no record of the same street, house number and city, comes back as `not_found` with no sources and "Adresa … nije evidentirana u sustavu", and a field no record holds, like acquisition, comes back as "Taj podatak nije evidentiran." in front of what the record does say.
