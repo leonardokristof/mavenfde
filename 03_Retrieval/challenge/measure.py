@@ -43,16 +43,19 @@ def schema(name, description, properties, required=()):
 
 
 def approaches():
-    index, wiki = Index(load_records()), Wiki()
-    rag = ([schema("search_chunks", "Search ranked records. Search again with a new query when evidence is incomplete.",
-                   {"query": {"type": "string"}, "k": {"type": "integer"}}, ["query"])], {"search_chunks": index.search_chunks})
+    records, wiki = load_records(), Wiki()
+    search = schema("search_chunks", "Search ranked records. Search again with a new query when evidence is incomplete.",
+                    {"query": {"type": "string"}, "k": {"type": "integer"}}, ["query"])
+    bm25, hybrid = Index(records), Index(records, mode="hybrid")
     dci = ([schema("list_pages", "Read the wiki index of cities.", {}),
             schema("grep_wiki", "Search exact text or a regular expression across wiki pages with line provenance.",
                    {"pattern": {"type": "string"}}, ["pattern"]),
             schema("read_page", "Read a complete wiki page by its stable name, like grad_zagreb.md or r0123.md.",
                    {"page": {"type": "string"}}, ["page"])],
            {"list_pages": wiki.list_pages, "grep_wiki": wiki.grep_wiki, "read_page": wiki.read_page})
-    return {"Agentic RAG": rag, "DCI Wiki": dci}
+    print(f"embedding the corpus: {hybrid.tokens:,} tokens, {hybrid.cut} records cut at 128, local model, $0")
+    return {"Agentic RAG": ([search], {"search_chunks": bm25.search_chunks}), "DCI Wiki": dci,
+            "Hybrid RAG": ([search], {"search_chunks": hybrid.search_chunks})}
 
 
 def run_agent(question, tools, funcs, max_turns=6):
