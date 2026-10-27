@@ -11,7 +11,8 @@ from pathlib import Path
 from fastapi.responses import HTMLResponse
 from gradio import Server
 
-from fiberly import solve
+import records
+from fiberly import solve, solve_from_records
 from llm import stream_reply
 from schema import Request
 
@@ -40,6 +41,24 @@ def answer_fibre_question(message: str, history: list | None = None) -> str:
     buildings found and at most one next step.
     """
     return solve(Request(message=message, history=history or [])).model_dump_json()
+
+
+@app.api(name="answer_from_records")
+def answer_from_records(message: str, history: list | None = None) -> str:
+    """Answer an operator's fibre question from the FTTH records, and name the records it used.
+
+    message is the operator's text as typed: an ADM ID, an AAMS or card number, or an address
+    with street, house number and city. history holds the earlier turns, for a follow-up with
+    no ID in it. Returns the Response from schema.py as JSON:
+    - "answered": the answer comes only from the records listed in sources (IDs like r0305).
+    - "not_found": no record has that ID or that street, number and city; sources is empty.
+      Ask the operator to check what they typed instead of calling again with the same input.
+    - "needs_clarification": the answer is the one question to put to the operator.
+    - "out_of_scope" or "error": nothing to look up, or a technical failure.
+    A field no record holds, such as acquisition or the project phase, comes back as not
+    recorded, never inferred. buildings stays empty: the records are text, and sources names them.
+    """
+    return solve_from_records(Request(message=message, history=history or [])).model_dump_json()
 
 
 # --- The frontend ------------------------------------------------------------
@@ -71,4 +90,5 @@ if __name__ == "__main__":
     # quietly redirect it to localhost, which is why it looks fine on some
     # machines and broken on others. Print the one that always works.
     print(f"\n  Open http://localhost:{port} in your browser\n", flush=True)
+    print(f"  Records: {records.CORPUS}{'' if records.CORPUS.exists() else ' is missing, answer_from_records returns error'}\n", flush=True)
     app.launch(server_name="0.0.0.0", server_port=port)

@@ -57,7 +57,7 @@ def count_tokens(message: str, history: list[dict] | None = None) -> int:
 
 
 def complete(system: str, messages: list[dict], max_tokens: int = 2000) -> tuple[str, dict]:
-    """One call without streaming. Returns the text and the token counts the provider reported."""
+    """One call without streaming. Returns the text, the token counts the provider reported and the price in $."""
     kwargs = {
         "model": MODEL,
         "messages": [{"role": "system", "content": system}, *messages],
@@ -70,7 +70,8 @@ def complete(system: str, messages: list[dict], max_tokens: int = 2000) -> tuple
         kwargs["extra_headers"] = EXTRA_HEADERS
 
     response = completion(**kwargs)
-    usage = {"in": response.usage.prompt_tokens, "out": response.usage.completion_tokens}
+    usage = {"in": response.usage.prompt_tokens, "out": response.usage.completion_tokens,
+             "usd": response._hidden_params.get("response_cost") or 0.0}
     return response.choices[0].message.content or "", usage
 
 

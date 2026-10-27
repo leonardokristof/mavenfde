@@ -1,33 +1,22 @@
 import json
 import re
 import sys
-import unicodedata
 from pathlib import Path
 
 import numpy as np
 from rank_bm25 import BM25Okapi
 
 ROOT = Path(__file__).resolve().parents[2]
-CORPUS = ROOT / "use_case" / "data" / "synthetic_sonnet.jsonl"
+sys.path.insert(0, str(ROOT / "01_Product_Engineering" / "challenge"))
+from records import load_records, tokenize  # noqa: E402
+
 LABELS = ROOT / "use_case" / "evals" / "retrieval.jsonl"
 FIELDS = {"output": ("output",), "input+output": ("input", "output"), "input": ("input",)}
 EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
-def load_records():
-    rows = CORPUS.read_text(encoding="utf-8").splitlines()
-    return [{"id": f"r{n:04d}", **json.loads(row)} for n, row in enumerate(rows, 1)]
-
-
 def load_labels():
     return [json.loads(line) for line in LABELS.read_text(encoding="utf-8").splitlines()]
-
-
-def tokenize(text, fold=True):
-    if not fold:
-        return re.findall(r"[a-z0-9£$%]+", text.lower())
-    text = unicodedata.normalize("NFKD", text.lower().replace("đ", "d"))
-    return re.findall(r"\d+/\d+|[a-z0-9]+", "".join(c for c in text if not unicodedata.combining(c)))
 
 
 class Index:
