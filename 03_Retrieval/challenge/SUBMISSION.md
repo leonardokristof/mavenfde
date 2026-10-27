@@ -53,6 +53,14 @@ unit counts, clarification questions (no city, a bare number, a similar street),
 and injection. These are business rules once the record is found, so they belong to the goldens, the
 Week 4 harness and Week 6, not to a retrieval test.
 
+## Step 2: the schema
+
+The Week 1 `Request` and `Response` are implemented, not redesigned, and `solve()` keeps its
+signature. The one change is the field the challenge allows: `Response.sources`, the IDs of the records
+an answer was grounded in. It is empty by default, so the Week 1 endpoint is unchanged and the six goldens
+still match (Step 4). The records endpoint fills it in `solve_from_records`, from code, never from what
+the model says it used. The row is in [`decisions.md`](../../use_case/decisions.md).
+
 ## Step 3: measuring the techniques
 
 Three techniques over the same records, through Session 5's agent loop: Session 5's two
@@ -262,3 +270,13 @@ Since they would act on today's answers, that is an improvement for Week 4, not 
 request's task history and the notes from Pagesnap as the fields it needs. And because they would not check
 the source, the check that a record matches the typed ID or address stays a rule. The rows are in
 [`stakeholders.md`](../../use_case/stakeholders.md) and [`decisions.md`](../../use_case/decisions.md).
+
+## Step 7: bring it to work
+
+The system, what this week would change there and the three swap lines are under `## Bring it to work`
+at the end of the [challenge README](./README.md). In short: the company's central internal AI system
+answers from large document sets with plain chunk retrieval, and terms that look alike but mean different
+things pull the wrong chunk. Before switching anything, I would label ten real questions and measure its
+retrieval against DCI, with the source named in every answer. The documents stay where they are. The
+answer model is Sonnet 5.5 or Haiku 5.5, chosen by the same pass rate against cost per question. The
+change goes to the system's owners in the group as a ticket for their approval.
