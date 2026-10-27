@@ -605,3 +605,15 @@ where the answer came from.
 ## What the endpoint does when it should decline
 
 `answer_from_records` declines in code, before any answer is written: an ID no record has, or an address with no record of the same street, house number and city, comes back as `not_found` with no sources and "Adresa … nije evidentirana u sustavu", and a field no record holds, like acquisition, comes back as "Taj podatak nije evidentiran." in front of what the record does say.
+
+---
+
+## Bring it to work
+
+**The system:** the company's central internal AI system, with several functions and models, has a RAG that answers from large sets of documents in many file formats with plain chunk retrieval. The documents share a lot of similar terms, and the same term is used differently from one document to the next, which is exactly where a chunk ranked by similarity comes from the wrong document.
+
+What this week would change is the order. Before anything is switched, ten real questions labelled with the documents that answer them, and the current retrieval measured against DCI on those questions, with the source named in every answer. My guess is that DCI does better there, because `grep` finds the exact term and reading the whole page shows which meaning it has. On Fiberly's records DCI tied BM25 at five times the price, so the guess has to be measured, not assumed.
+
+- **Data:** the system's own document sets, in the formats it already reads, staying where they are. DCI needs them as pages with stable names, headings and an index, and someone has to own that index.
+- **Model or endpoint:** the answer model is Claude Sonnet 5.5 or Claude Haiku 5.5 on that system, picked by the same measurement, pass rate against cost per question. DCI needs no embedding model, so nothing is re-embedded when a document changes. For scale, embedding my 2,075 records took 175,930 tokens (*measured*, Step 3), and a document set many times larger pays that again on every change of chunking.
+- **Access or approval:** not ours to give. The system belongs to another company in the group and we run it in HT's environment, so the change goes to its owners as a ticket: what we would change (DCI tools next to the current retrieval), why (the measured comparison on labelled questions), and how we would roll it out, for their approval.

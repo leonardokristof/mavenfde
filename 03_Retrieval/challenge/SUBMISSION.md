@@ -46,6 +46,8 @@ to six systems, so the real floor is higher.
 - Only 11 of 2075 rows have a house number with a suffix, and only 2 of them with a slash like 3/2, while the pilot puts 12/1 among its edge cases.
 - Many synthetic messages look like the questions themselves ("provjeri adm …"). Whether the index includes the operator's message or only the answer decides how easy the search is, so Step 3 measures both.
 
+**q11 to q15 were added after Step 6.** They are the business owner's own questions, described in Step 6.
+
 **What the ten leave out**, and where it is tested instead: project phase and construction details,
 unit counts, clarification questions (no city, a bare number, a similar street), off-topic messages
 and injection. These are business rules once the record is found, so they belong to the goldens, the
@@ -218,8 +220,46 @@ The retrieval row and the four answers about non-text content are in
 I showed the business owner of the tool the first golden example, the question and Fiberly's answer, and
 asked the three questions. They would act on it, since it says whom to contact and what happens next. The
 answer and its source sound convincing, and they would trust it without checking, because checking takes
-too long today. They had nothing to add. The row is in [`stakeholders.md`](../../use_case/stakeholders.md),
-and what it changed is in `decisions.md`.
+too long today. They had nothing to add.
 
-No five questions of their own were typed, so `retrieval.jsonl` still has the ten. That is the gap to close
-first: a session where operators who do this every day type their own questions into `answer_from_records`.
+Then they wrote five questions of their own, the way they would type them, and said what they expect back.
+The questions are in their words, with the ID they made up and the two real addresses they typed swapped
+for records in the corpus, as in Step 1:
+
+| | Their question | What they expect back, as they said it |
+| --- | --- | --- |
+| q11 | Provjeri mi sto je konkretno sa slučajem sa AAMS ID - 27214368 | "da mi sustav konkretno javi što je zadnje rađeno na adresi, odnosno s tim slučajem, koje sve informacije ima, općenito da mi napiše sve što znamo iz sustava o tom slučaju" |
+| q12 | Trebam info o adresi Kupska 7, Zagreb | "jednostavna provjera adrese, opet dohvat svega u sustavima i lijep prikaz izlistanja tih informacija, od napomena do općenitih informacija" |
+| q13 | Radimo na zgradi u Rijeci, adresa Primorska 28, trebam vise informacija, mozes li vidjet sto sve imamo u sustavu vezano za to. | the same |
+| q14 | AAMS ID je 27214368, koji je hakom timer? | the same |
+| q15 | ID je 27214368, jel postoji neki timer od hakoma ili nesto drugo sprjecava radove? | the same |
+
+**As they typed them**, the endpoint answered every one correctly. Four came back `not_found`, because the
+made-up ID and the two real addresses are not in synthetic data, and none offered a near miss. The bare
+"ID" got the question back, "Je li to ADM ID ili AAMS broj?".
+
+**With the swapped records**, 3 runs each:
+
+| Approach | Pass | Cited the record | Calls | Evidence chars | Latency | $ per question |
+| --- | --- | --- | --- | --- | --- | --- |
+| Agentic RAG (BM25) | 12/15 | 12/12 | 2.1 | 2,679 | 3.9 s | $0.00054 |
+| DCI Wiki | 12/15 | 12/12 | 3.3 | 13,562 | 5.4 s | $0.00217 |
+| Hybrid RAG (BM25 + dense) | 9/15 | 9/12 | 2.5 | 3,389 | 4.6 s | $0.00067 |
+| **Pipeline** | **15/15** | 12/12 | 0.8 | 247 | 2.1 s | **$0.00021** |
+
+- **The decision holds on their questions.** The pipeline passes all 15 at the lowest price, and its plain checks are the records word for word.
+- **q15 tests a rule, not retrieval.** The pilot asks back when a number comes without its system, and the pipeline does. The three agents searched the number, found the right record and answered, which in this corpus is right, since no number belongs to two systems. Which of the two the operators want is a question for the next session.
+- **The hybrid never found Kupska 7, Zagreb** in three runs and said it had no data. The dense half pushed the exact address out of the top four again.
+
+The run cost $0.0538, and the five questions as typed $0.0008.
+
+**What it changed:** their five questions are q11 to q15 in
+[`retrieval.jsonl`](../../use_case/evals/retrieval.jsonl), so Week 4 scores them too. All five ask for the
+same thing: everything the systems know about the case, listed. The corpus cannot give that, because it
+holds no earlier work on a request and no technicians' notes, and a plain check is two or three sentences.
+That is the answer format to change in Week 4, with the request's task history and the notes from Pagesnap
+as the fields it needs. The rows are in [`stakeholders.md`](../../use_case/stakeholders.md) and
+[`decisions.md`](../../use_case/decisions.md).
+
+**Still open:** they have not yet seen the endpoint's answers to their own five questions. Showing them
+those answers and asking the first two questions again closes the loop.
