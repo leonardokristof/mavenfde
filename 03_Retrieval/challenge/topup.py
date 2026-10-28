@@ -21,7 +21,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "02_Open_Weights" / "challenge")]
 
 from helpers import sdg  # noqa: E402
 from compare_models import GOLDEN_VALUES, SUBAGENT_PROMPT  # noqa: E402
-from generate import ALWAYS, FORMS, PATHS, SPECIFIC_FIELDS, load_seeds, validate  # noqa: E402
+from generate import ALWAYS, FORMS, PATHS, SPECIFIC_FIELDS, fix_and_validate, load_seeds  # noqa: E402
 
 DATA = ROOT / "use_case" / "data"
 WORK = DATA / "sonnet_topup"  # batch files and raw rows; gitignored like the rest of data/
@@ -89,7 +89,7 @@ def merge() -> None:
     valid = []
     for row in kept:
         try:
-            validate({k: v for k, v in row.items() if not k.startswith("_")})
+            fix_and_validate(row)
             valid.append(row)
         except Exception:
             pass

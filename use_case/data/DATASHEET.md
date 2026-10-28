@@ -29,7 +29,8 @@ Combinations taken out, because they would only teach the generator nonsense: an
 | Combinations | 600 (475 answered, 50 not found, 50 needs clarification, 25 out of scope) |
 | Generated | 1800, none unparseable |
 | After dedupe | 1796 |
-| Schema-valid | 1796 |
+| Schema-valid, as checked then | 1796 |
+| Schema-valid once the status is checked too | 1668 of the 1794 kept; the other 126 were corrected in place, see below |
 | Dead combinations | 0 |
 | Removed after the leak check | 2, so 1794 kept |
 
@@ -40,7 +41,7 @@ Combinations taken out, because they would only teach the generator nonsense: an
 - 20 calls at a time, 120 s timeout, 3 retries.
 - 776k tokens in and 1.19M out, about five minutes.
 
-Validation uses the real `Request` and `Response` models, the same ones the endpoint uses. Every row also matched the outcome its combination asked for, but that check is weak, because the outcome is written in the prompt and the model copies it. It only catches broken rows.
+Validation uses the real `Request` and `Response` models, the same ones the endpoint uses, and since the Week 2 review it also rejects any status the schema doesn't have. Every row also matched the outcome its combination asked for, but that check is weak, because the outcome is written in the prompt and the model copies it. It only catches broken rows.
 
 An earlier run on the same day was thrown away for two reasons:
 - The out-of-scope rows carried an ADM, so "pozdrav, ADM 6630142" was labelled out of scope while Fiberly should answer it.
@@ -48,7 +49,7 @@ An earlier run on the same day was thrown away for two reasons:
 
 The ID prefix and the "no ID" path for out-of-scope messages fixed both.
 
-126 rows carry a status the schema doesn't have, most often "IN DESIGN" (41). The axis value "in design or FTTA rollout, with no timeline" names a state the schema has no status for, so the model makes one up. They are kept, and the value needs a status named before the next run.
+126 rows carried a status the schema doesn't have, most often "IN DESIGN" (41). The axis value "in design or FTTA rollout, with no timeline" mixed two fields the pilot keeps apart: the fibre status and the project phase. A building whose project is in design has the fibre status `FTTA ROLLOUT`, and "Projektiranje" is the phase, so the axis now reads "FTTA rollout: the project is still in design, so there is no timeline". `fix_status()` in `generate.py` corrected the 126 in place: design and FTTA variants become `FTTA ROLLOUT` (83), a status with a note in brackets keeps the status before the note (22), sub-variants like HOMES PASSED - BUILDING take the nearest status (7), and a value that is not a fibre status at all, like PARKED or two statuses at once, is dropped from the last line (14). `validate()` now rejects any status left outside the schema, and generation runs `fix_status()` before it. Rows were corrected, not dropped, so the line numbers that Week 3 uses as record IDs stay the same.
 
 A second file sits beside this one: `synthetic_sonnet.jsonl`, 1777 rows. Claude Sonnet 5.5 wrote the same 600 combinations as six Claude Code subagents, and the rows went through the same checks. The 14 rows that reused a golden's project names or street were removed. Which file Week 3 uses is still open. The comparison is in `02_Open_Weights/challenge/SUBMISSION.md`, and everything above describes Haiku's file.
 
@@ -110,10 +111,15 @@ No, they overlap in two places.
 - no 6-digit or longer ID appears in more than one row of the whole file. Two rows use a prefix one digit off, and their IDs are still unique;
 - no person names. The one hit was the town Vela Luka.
 
-**Record IDs:** a row's ID is its line number, `r0001` to `r2075`. The labels in `use_case/evals/retrieval.jsonl` and the `sources` in every answer point at these IDs, so the file is only ever appended to, never regenerated or reordered. SHA-256 of the 2075-row file: `e93591ae1313b4f7388e08e256be8f0d33be0758ba0d1be0426d507c538402db`.
+**Record IDs:** a row's ID is its line number, `r0001` to `r2075`. The labels in `use_case/evals/retrieval.jsonl` and the `sources` in every answer point at these IDs, so the file is only ever appended to, never regenerated or reordered. SHA-256 of the 2075-row file, after the Week 2 review corrections: `c1f9ef70edbd07281307f7a58ae47987c1fcbf332ab5b0044c285a0f28c230b8`.
 
 **What this corpus cannot show:** every building sits in one row, so a question that needs two records is rare here, while at work one answer joins two to six systems. And each row is an answer, not a source record, so it stands in for the tables Fiberly would read by key.
 
 **Found while labelling the Week 3 questions:**
 - No row holds an acquisition status (approved, rejected, new). The Week 2 axis was worded "whether a new service can be connected", and both models wrote exactly that. A question about acquisition can only be answered as "not available" here.
 - Only 11 of the 2075 rows have a house number with a suffix: 2 with a slash (`3/2`, `27/2`) and 9 with a letter (`16 A`, `30A`). Suffixes are among the pilot's edge cases, but the form axis never asked for them.
+
+**After the Week 2 review (28 October):**
+- **Statuses.** 133 rows had a status outside the schema: 79 "IN DESIGN" and 54 with the field and network statuses written together. `fix_status()` corrected them in place, the same way as Haiku's file, and none of the Week 3 labelled records was among them. The pipeline measured again on the corrected file passed 45 of 45 (15 questions, 3 runs), and retrieval alone ranks the labelled records exactly as before.
+- **Rebuilt from its parts.** `compare_models.py compare` and then `topup.py merge`, both with the status correction in, rebuild this file byte for byte from the subagents' raw rows, which are kept locally. It cannot be made again from nothing with one command, because the rows were written by Claude Code subagents and not through `generate.py`.
+- **Copies across groups.** Dedupe only compares rows inside the same intent and record state, so I checked the whole file across groups: 0 identical messages, and no two answers in different groups alike at 0.9. At 0.7 on the message, 66 pairs across groups match, and they are different buildings on the same template ("Splitska 4" and "Splitska 55").

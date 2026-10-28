@@ -174,3 +174,9 @@ The project and the three swap lines are under `## Bring it to work` at the end 
 deploy while its GDPR review went back and forth. This week's lesson is to agree first, with
 Legal, which data may go to an LLM and how, using concrete examples, and only then write the
 document.
+
+## After the review
+
+- **Statuses.** `validate()` now rejects a status the schema doesn't have, and `fix_status()` in `generate.py` runs first. The 126 rows in Haiku's file and 133 in Sonnet's that had one were corrected in place, not dropped, so the line numbers that Week 3 uses as record IDs stay the same. "IN DESIGN" was never a fibre status: the pilot keeps the project phase ("Projektiranje") apart, and a building in design is `FTTA ROLLOUT`. The axis now says so.
+- **Which file for Week 3.** Sonnet's, already used in Week 3. It rebuilds byte for byte from its raw rows with `compare_models.py compare` and `topup.py merge`, and checked across groups it has no copied answers and no identical messages. It cannot be made from nothing with one command, and the datasheet says so.
+- The counts and the checks are in the [datasheet](../../use_case/data/DATASHEET.md), and the decision is a row in [`decisions.md`](../../use_case/decisions.md).
