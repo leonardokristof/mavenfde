@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(Path(__file__).parent)]
 
 from helpers import sdg  # noqa: E402
-from generate import build_combos, load_seeds, validate  # noqa: E402
+from generate import build_combos, fix_and_validate, load_seeds  # noqa: E402
 
 DATA = ROOT / "use_case" / "data"
 WORK = DATA / "sonnet"  # batch files and the subagents' raw rows; gitignored like the rest of data/
@@ -90,7 +90,7 @@ def compare() -> None:
     valid = []
     for row in kept:
         try:
-            validate({k: v for k, v in row.items() if not k.startswith("_")})
+            fix_and_validate(row)
             valid.append(row)
         except Exception:
             pass

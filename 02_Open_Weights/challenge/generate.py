@@ -11,16 +11,18 @@ handed to `helpers.sdg.generate` as a list.
 
 import itertools
 import json
+import re
 import sys
 from collections import Counter
 from pathlib import Path
+from typing import get_args
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "01_Product_Engineering" / "challenge")]
 
 from helpers import nb, sdg  # noqa: E402
 from helpers.llm import CallStats  # noqa: E402
-from schema import Request, Response  # noqa: E402  (the same models the endpoint validates against)
+from schema import Building, Request, Response  # noqa: E402  (the same models the endpoint validates against)
 
 # What the operator wants. Decides the answer: a general check gets the whole template from
 # code, a specific field goes to the model, which must give that one field and not list the rest.
@@ -64,7 +66,7 @@ STATES = {
         "several active requests, or a live record next to an old duplicate of the building",
         "the field data and the network status disagree; the field data is newer and wins",
         "an optika interes instead of a connection request",
-        "in design or FTTA rollout, with no timeline",
+        "FTTA rollout: the project is still in design, so there is no timeline",
         "a mini project: small extra works are needed before the connection can be made",
         "the address exists only in the fallback table",
     ],
@@ -151,9 +153,41 @@ def load_seeds() -> list[dict]:
     return [{"input": g["input"], "output": g["output"], "outcome": o} for g, o in zip(goldens, outcomes)]
 
 
+STATUSES = set(get_args(get_args(Building.model_fields["fibre_status"].annotation)[0])) | {"HOMES PASSED - STREET + SU"}
+
+
+def fix_status(output: str) -> str:
+    def one(part: str) -> str:
+        if not part.startswith("Status:"):
+            return part
+        status = re.sub(r"\s*\(.*", "", part[7:]).strip()
+        if status in STATUSES:
+            return f"Status: {status}"
+        if " / " in status:
+            return ""
+        if re.search(r"DESIGN|DIZAJN|FTTA|NOT PASSED|PASSED - NONE|SURVEY", status):
+            return "Status: FTTA ROLLOUT"
+        if status.startswith("HOMES PASSED"):
+            return "Status: HOMES PASSED - HOUSE"
+        if status.startswith("HOMES CONNECTED"):
+            return "Status: HOMES CONNECTED"
+        return ""
+
+    return "\n".join(" | ".join(p for p in map(one, (s.strip() for s in line.split("|"))) if p) if "Status:" in line else line
+                     for line in output.split("\n"))
+
+
 def validate(row: dict) -> None:
     Request(message=row["input"])
     Response(outcome=row["outcome"], answer=row["output"])
+    for status in re.findall(r"Status: ([^|\n]+)", row["output"]):
+        if status.strip() not in STATUSES:
+            raise ValueError(f"status not in the schema: {status.strip()}")
+
+
+def fix_and_validate(row: dict) -> None:
+    row["output"] = fix_status(row["output"])
+    validate(row)
 
 
 def main() -> None:
@@ -167,9 +201,20 @@ def main() -> None:
             print("\n---\n" + sdg.GENERATION_PROMPT.format(examples=shown, n=3, profile=profile))
         return
 
+    if "--fix" in sys.argv:
+        for name in ("synthetic_v1.jsonl", "synthetic_sonnet.jsonl"):
+            path = ROOT / "use_case" / "data" / name
+            rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            changed = sum(fix_status(row["output"]) != row["output"] for row in rows)
+            for row in rows:
+                fix_and_validate(row)
+            path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+            print(f"{name}: {changed} of {len(rows)} rows had a status outside the schema, fixed in place")
+        return
+
     cfg, stats = nb.bootstrap(start=ROOT), CallStats()
     rows, report = sdg.generate(
-        cfg, seeds, combos, per_combo=3, examples=len(seeds), validate=validate, workers=20,
+        cfg, seeds, combos, per_combo=3, examples=len(seeds), validate=fix_and_validate, workers=20,
         dedupe_by=lambda row: (row["_axes"]["intent"], row["_axes"]["record"]), stats=stats,
         progress=lambda done, total: print(f"\r{done}/{total}", end="", flush=True),
     )

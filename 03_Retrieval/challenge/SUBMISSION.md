@@ -19,6 +19,9 @@ uv run python 03_Retrieval/challenge/topup.py batches   # the batch files the So
 uv run python 03_Retrieval/challenge/topup.py merge     # their rows, checked and appended
 ```
 
+After the Week 2 review on 28 October, 133 rows had a status outside the schema corrected in place. None of the labelled
+records was among them. On the corrected file the pipeline passed again, 45 of 45 over the fifteen questions in 3 runs.
+
 ## Step 1: ten labelled questions
 
 [`use_case/evals/retrieval.jsonl`](../../use_case/evals/retrieval.jsonl). The questions are real
