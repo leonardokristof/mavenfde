@@ -1,143 +1,387 @@
 <!doctype html>
-<html lang="en">
+<html lang="hr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fiberly</title>
     <style>
+      :root {
+        --bg: #0e040a;
+        --panel: rgba(255, 255, 255, 0.045);
+        --border: rgba(255, 255, 255, 0.09);
+        --magenta: #e20074;
+        --pink: #ff4fa3;
+        --steel: #9fb3c3;
+        --text: #f5eef2;
+        --muted: #b6a3ae;
+        --amber: #f5a524;
+        --red: #ff5c7a;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
       body {
-        font-family: system-ui, sans-serif;
-        max-width: 44rem;
-        margin: 2rem auto;
-        padding: 0 1rem;
-        line-height: 1.5;
+        background: radial-gradient(ellipse at 50% 30%, #2b0b21 0%, var(--bg) 65%);
+        color: var(--text);
+        font: 15px/1.55 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
       }
-      .log {
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 1rem;
-        min-height: 20rem;
-        margin-bottom: 1rem;
-        white-space: pre-wrap;
-        overflow-y: auto;
+      #net { position: fixed; inset: 0; z-index: -1; opacity: 0.55; }
+      .wrap { width: 100%; max-width: 860px; margin: 0 auto; padding: 0 1.25rem; }
+
+      header.top { border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); background: rgba(14, 4, 10, 0.6); }
+      header.top .wrap { display: flex; align-items: center; gap: 0.9rem; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 0.7rem; margin-right: auto; }
+      .brand b { font-size: 1.15rem; letter-spacing: 0.02em; }
+      .brand small { display: block; color: var(--muted); font-size: 0.78rem; margin-top: -2px; }
+      .switch { display: flex; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+      .switch button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.82rem; padding: 0.3rem 0.85rem; border-radius: 999px; cursor: pointer; }
+      .switch button.on { background: var(--magenta); color: #fff; }
+      .ghost { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 999px; font: inherit; font-size: 0.82rem; padding: 0.35rem 0.85rem; cursor: pointer; }
+      .ghost:hover { border-color: rgba(226, 0, 116, 0.6); }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06); }
+      .dot.ok { background: #3ddc97; }
+      .dot.bad { background: var(--red); }
+
+      main { flex: 1; overflow-y: auto; }
+      main .wrap { padding-top: 1.75rem; padding-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+      #welcome { text-align: center; padding: 3.5rem 0 1rem; }
+      #welcome h1 { font-size: 2.1rem; margin: 1rem 0 0.4rem; letter-spacing: 0.02em; }
+      #welcome p { color: var(--muted); max-width: 32rem; margin: 0 auto 1.6rem; }
+      .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+      .chip { border: 1px solid rgba(226, 0, 116, 0.45); background: rgba(226, 0, 116, 0.08); color: var(--text); border-radius: 999px; padding: 0.4rem 0.9rem; font: inherit; font-size: 0.85rem; cursor: pointer; }
+      .chip:hover { background: rgba(226, 0, 116, 0.2); }
+
+      .msg { max-width: 92%; animation: rise 0.25s ease-out; }
+      @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+      .msg.user { align-self: flex-end; background: rgba(226, 0, 116, 0.16); border: 1px solid rgba(226, 0, 116, 0.4); border-radius: 18px 18px 4px 18px; padding: 0.6rem 0.95rem; white-space: pre-wrap; }
+      .msg.bot { align-self: flex-start; width: 92%; background: var(--panel); border: 1px solid var(--border); border-radius: 4px 18px 18px 18px; padding: 0.9rem 1.1rem 1rem; backdrop-filter: blur(8px); }
+      .bot-head { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.55rem; font-size: 0.82rem; }
+      .bot-head .name { font-weight: 600; }
+      .bot-head .time { color: var(--muted); margin-left: auto; }
+      .badge { border-radius: 999px; padding: 0.08rem 0.6rem; font-size: 0.75rem; font-weight: 600; border: 1px solid; }
+      .badge.ok { color: #fff; background: var(--magenta); border-color: var(--magenta); }
+      .badge.ask { color: var(--steel); border-color: var(--steel); }
+      .badge.miss { color: var(--amber); border-color: var(--amber); }
+      .badge.off { color: var(--muted); border-color: var(--muted); }
+      .badge.err { color: var(--red); border-color: var(--red); }
+
+      .block + .block { margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px dashed var(--border); }
+      .place { margin: 0 0 0.25rem; font-size: 1rem; }
+      .block p { margin: 0 0 0.45rem; }
+      .hl { color: var(--pink); font-weight: 600; }
+      .num { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; color: #fff; }
+
+      .record { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 0.6rem; padding: 0.7rem 0.85rem; border-radius: 12px; background: rgba(0, 0, 0, 0.28); border: 1px solid var(--border); }
+      .field { display: flex; flex-direction: column; min-width: 7rem; }
+      .key { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+      .value { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.88rem; }
+      .status { align-self: flex-start; margin-top: 2px; border-radius: 6px; padding: 0.05rem 0.45rem; font-size: 0.78rem; font-weight: 600; border: 1px solid; }
+      .s-connected { background: var(--magenta); border-color: var(--magenta); color: #fff; }
+      .s-house { color: var(--pink); border-color: var(--pink); }
+      .s-street { color: var(--steel); border-color: var(--steel); }
+      .s-ftta, .s-other { color: var(--muted); border-color: var(--muted); }
+      .hint { font-size: 0.74rem; color: var(--muted); }
+      .facts { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+      .fact { font-size: 0.78rem; border-radius: 999px; padding: 0.1rem 0.6rem; background: rgba(159, 179, 195, 0.12); color: var(--steel); }
+      .fact.warn { background: rgba(245, 165, 36, 0.14); color: var(--amber); }
+      .fact.late { background: rgba(255, 92, 122, 0.14); color: var(--red); }
+
+      .next { margin-top: 0.75rem; padding: 0.5rem 0.8rem; border-left: 3px solid var(--magenta); background: rgba(226, 0, 116, 0.08); border-radius: 0 10px 10px 0; font-size: 0.92rem; }
+      .next span { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--pink); }
+      .sources { margin-top: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--muted); }
+      .sources code { background: rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 0.05rem 0.4rem; color: var(--text); }
+
+      .typing span { display: inline-block; width: 7px; height: 7px; margin-right: 4px; border-radius: 50%; background: var(--pink); animation: blink 1s infinite; }
+      .typing span:nth-child(2) { animation-delay: 0.15s; }
+      .typing span:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes blink { 50% { opacity: 0.25; } }
+
+      footer.composer { border-top: 1px solid var(--border); background: rgba(14, 4, 10, 0.7); backdrop-filter: blur(10px); }
+      footer.composer .wrap { padding-top: 0.9rem; padding-bottom: 0.9rem; }
+      form { display: flex; gap: 0.6rem; align-items: flex-end; }
+      textarea { flex: 1; resize: none; max-height: 10rem; background: rgba(255, 255, 255, 0.06); color: var(--text); border: 1px solid var(--border); border-radius: 14px; padding: 0.7rem 0.95rem; font: inherit; outline: none; }
+      textarea:focus { border-color: var(--magenta); box-shadow: 0 0 0 3px rgba(226, 0, 116, 0.2); }
+      .send { width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--magenta); color: #fff; cursor: pointer; display: grid; place-items: center; }
+      .send:disabled { opacity: 0.45; cursor: default; }
+      textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .switch button, .ghost { white-space: nowrap; }
+      @media (max-width: 560px) {
+        header.top .wrap { gap: 0.5rem; padding: 0 0.75rem; }
+        .brand div { display: none; }
+        .msg, .msg.bot { max-width: 100%; width: 100%; }
       }
-      .turn { margin-bottom: 1rem; }
-      .who { font-weight: 600; }
-      form { display: flex; gap: 0.5rem; }
-      input { flex: 1; padding: 0.5rem; font: inherit; }
-      button { padding: 0.5rem 1rem; font: inherit; }
-      h2 { margin-top: 3rem; }
     </style>
   </head>
   <body>
-    <h1>Fiberly</h1>
-    <p>
-      Upiši adresu, ADM ID ili AAMS broj. Odgovor kaže je li optika dostupna, je li
-      aktivna HAKOM štoperica, što je s otvorenim zahtjevom i kome se javiti.
-    </p>
+    <canvas id="net"></canvas>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="mark" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="18.5" fill="#1b0713" stroke="#e20074" stroke-width="1.5" />
+            <g stroke="#e20074" stroke-opacity="0.6" stroke-width="0.8">
+              <path d="M11 14 L20 10 L29 15 L27 26 L18 30 L10 24 Z M20 10 L20 20 L29 15 M20 20 L27 26 M20 20 L10 24 M20 20 L18 30" fill="none" />
+            </g>
+            <g fill="#ff4fa3"><circle cx="11" cy="14" r="1.8" /><circle cx="29" cy="15" r="2.2" /><circle cx="18" cy="30" r="1.6" /></g>
+            <g fill="#9fb3c3"><circle cx="20" cy="10" r="1.6" /><circle cx="27" cy="26" r="2" /><circle cx="10" cy="24" r="1.5" /></g>
+            <circle cx="20" cy="20" r="2.4" fill="#fff" />
+      </symbol>
+    </svg>
 
-    <div class="log" id="fibre-log"></div>
-    <form id="fibre-form">
-      <input id="fibre-input" placeholder="npr. provjeri adresu Vrbik 23 Zagreb" autocomplete="off" />
-      <button type="submit">Send</button>
-    </form>
+    <header class="top">
+      <div class="wrap">
+        <div class="brand">
+          <svg width="38" height="38" aria-hidden="true"><use href="#mark" /></svg>
+          <div><b>Fiberly</b><small>FTTH asistent za operatere</small></div>
+        </div>
+        <div class="switch" id="switch"></div>
+        <button class="ghost" id="reset" type="button">Novi razgovor</button>
+        <span class="dot" id="dot" title="provjeravam vezu…"></span>
+      </div>
+    </header>
 
-    <h2>General chat</h2>
+    <main id="main">
+      <div class="wrap" id="thread">
+        <section id="welcome">
+          <svg width="92" height="92" aria-hidden="true"><use href="#mark" /></svg>
+          <h1>Fiberly</h1>
+          <p>Pitaj za optiku po adresi, ADM ID-u ili AAMS broju: dostupnost, HAKOM štoperica, otvoreni zahtjev i kome se javiti.</p>
+          <div class="chips" id="chips"></div>
+        </section>
+      </div>
+    </main>
 
-    <div class="log" id="chat-log"></div>
-    <form id="chat-form">
-      <input id="chat-input" placeholder="Ask something..." autocomplete="off" />
-      <button type="submit">Send</button>
-    </form>
+    <footer class="composer">
+      <div class="wrap">
+        <form id="form">
+          <textarea id="input" rows="1" placeholder="npr. provjeri adm 2003917, ili zalijepi mail operatera" autocomplete="off"></textarea>
+          <button class="send" id="send" type="submit" aria-label="Pošalji">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+        </form>
+      </div>
+    </footer>
 
     <script type="module">
+      const SOURCES = {
+        records: {
+          api: "answer_from_records", label: "Zapisi", title: "2.075 generiranih FTTH zapisa",
+          examples: ["provjeri adm 2003917", "provjeri Mlinska 22", "adm 4707819 moze li se ukljucit nova usluga", "tko je odgovoran za adm 7003185, zahtjev kasni"],
+        },
+        sample: {
+          api: "answer_fibre_question", label: "Primjer", title: "9 primjer zgrada iz Week 1",
+          examples: ["provjeri dostupnost Gunduliceva 12/1 Karlovac", "tiket 51873402", "dostupnost optike za adm 2214637", "provjeri adm 4120936"],
+        },
+      };
       const OUTCOMES = {
-        answered: "odgovor",
-        needs_clarification: "treba pojašnjenje",
-        not_found: "nije u sustavu",
-        out_of_scope: "izvan teme",
-        error: "greška",
+        answered: ["Odgovor", "ok"], needs_clarification: ["Treba pojašnjenje", "ask"], not_found: ["Nije u sustavu", "miss"],
+        out_of_scope: ["Izvan teme", "off"], error: ["Greška", "err"],
+      };
+      const STATUS = {
+        "HOMES CONNECTED": ["zgrada spojena", "s-connected"], "HOMES PASSED - HOUSE": ["optika do zgrade", "s-house"],
+        "HOMES PASSED - STREET": ["optika u ulici", "s-street"], "FTTA ROLLOUT": ["u projektiranju", "s-ftta"],
+      };
+      const LABELS = { "ADM ID": "ADM ID", "AAMS ID": "AAMS", "Naziv projekta": "Projekt", TASK: "Zadatak" };
+
+      const $ = (id) => document.getElementById(id);
+      const el = (tag, cls, text) => {
+        const node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text != null) node.textContent = text;
+        return node;
       };
 
-      function addTurn(log, who, text) {
-        const div = document.createElement("div");
-        div.className = "turn";
-        div.innerHTML = `<span class="who">${who}:</span> `;
-        const span = document.createElement("span");
-        div.appendChild(span);
-        span.textContent = text;
-        log.appendChild(div);
-        log.scrollTop = log.scrollHeight;
-        return span;
+      // The network from the team logo, drawn once behind everything. Seeded, so it is the same on every load.
+      function drawNetwork() {
+        const canvas = $("net"), ctx = canvas.getContext("2d"), dpr = window.devicePixelRatio || 1;
+        const w = innerWidth, h = innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.width = w + "px"; canvas.style.height = h + "px";
+        ctx.scale(dpr, dpr);
+        let seed = 7;
+        const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+        const nodes = Array.from({ length: Math.round((w * h) / 16000) }, () => ({ x: rand() * w, y: rand() * h, r: rand() }));
+        ctx.strokeStyle = "rgba(226, 0, 116, 0.16)";
+        for (const a of nodes) for (const b of nodes) {
+          if (a !== b && Math.hypot(a.x - b.x, a.y - b.y) < 120) { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+        }
+        for (const n of nodes) {
+          ctx.fillStyle = n.r > 0.9 ? "#9fb3c3" : n.r > 0.75 ? "rgba(255,255,255,0.7)" : "#e20074";
+          ctx.beginPath(); ctx.arc(n.x, n.y, n.r > 0.9 ? 4.5 : n.r > 0.6 ? 2.4 : 1.4, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      drawNetwork();
+      addEventListener("resize", drawNetwork);
+
+      // Gradio's REST API needs no client library: one POST starts the call, one GET returns its events.
+      // That keeps the page working on networks that block the CDN the old page loaded the client from.
+      async function ask(api, message, history) {
+        const start = await fetch(`/gradio_api/call/${api}`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: [message, history] }),
+        });
+        if (!start.ok) throw new Error(`HTTP ${start.status}`);
+        const { event_id } = await start.json();
+        const events = await (await fetch(`/gradio_api/call/${api}/${event_id}`)).text();
+        const data = events.trim().split("\n").filter((line) => line.startsWith("data: ")).pop();
+        if (events.includes("event: error") || !data) throw new Error("poslužitelj je vratio grešku");
+        return JSON.parse(JSON.parse(data.slice(6))[0]);
       }
 
-      // NOTE: this loads the Gradio client from a public CDN. On a locked-down
-      // corporate network that request may simply fail, so say it out loud
-      // instead of leaving a page that looks fine and does nothing.
-      let client;
-      try {
-        const { Client } = await import("https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js");
-        client = await Client.connect(window.location.origin);
-      } catch (err) {
-        console.error(err);
-        addTurn(document.getElementById("fibre-log"), "Fiberly",
-          "Ne mogu učitati Gradio klijent s cdn.jsdelivr.net. Ako je mreža blokira, stranica se učita, ali ne može slati pitanja.");
+      const escape = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      // Dates, durations and IDs are what the operator acts on or copies, so they stand out in the text.
+      const highlight = (s) => escape(s)
+        .replace(/\b\d{1,2}\.\d{1,2}\.\d{4}\.?/g, (m) => `<b class="hl">${m}</b>`)
+        .replace(/\b\d+ dana?\b/g, (m) => `<b class="hl">${m}</b>`)
+        .replace(/\b\d{5,10}\b/g, (m) => `<span class="num">${m}</span>`);
+      const isIdLine = (line) => /^\s*(ADM|AAMS) ID:/.test(line);
+      const date = (iso) => iso.split("-").reverse().join(".") + ".";
+
+      // The code-written ID line ("ADM ID: … | Status: … | Naziv projekta: …") becomes a card of fields.
+      function record(line, building) {
+        const card = el("div", "record");
+        for (const part of line.split("|")) {
+          const at = part.indexOf(":");
+          if (at < 0) continue;
+          const key = part.slice(0, at).trim(), value = part.slice(at + 1).trim();
+          const field = el("div", "field");
+          field.append(el("span", "key", LABELS[key] ?? key));
+          if (key === "Status") {
+            const [hint, cls] = STATUS[value] ?? ["", "s-other"];
+            field.append(el("span", `status ${cls}`, value), el("span", "hint", hint));
+          } else field.append(el("span", "value", value));
+          card.append(field);
+        }
+        if (building) card.append(facts(building, line.trim().startsWith("AAMS")));
+        return card;
       }
 
-      // Fiberly. The model has no memory: this array is the whole conversation.
-      const fibreLog = document.getElementById("fibre-log");
-      const fibreInput = document.getElementById("fibre-input");
-      const fibreHistory = [];
+      // Only the sample endpoint returns buildings as fields; the records endpoint has them in the text.
+      function facts(b, aamsCard) {
+        const row = el("div", "facts");
+        const add = (text, cls = "") => row.append(el("span", `fact ${cls}`, text));
+        if (b.stopwatch_active) add(`HAKOM štoperica do ${date(b.stopwatch_expires)}`, "warn");
+        else if (b.stopwatch_active === false) add("HAKOM štoperica nije aktivna");
+        if (b.expected_timeline) add(`Rok ${b.expected_timeline}`);
+        if (b.complex_connection) add("Složeno uključenje");
+        if (b.open_request) add(aamsCard ? `Zadatak: ${b.open_request.task_status}` : `AAMS ${b.open_request.aams_id} · ${b.open_request.task} · ${b.open_request.task_status}`);
+        if (b.days_past_deadline) add(`${b.days_past_deadline} dana preko roka`, "late");
+        if (b.escalation_contact) add(`Eskalacija: ${b.escalation_contact}`);
+        b.notes.forEach((note) => add(note));
+        return row;
+      }
 
-      document.getElementById("fibre-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const message = fibreInput.value.trim();
-        if (!message || !client) return;
-        fibreInput.value = "";
+      function botCard() {
+        const card = el("article", "msg bot");
+        const head = el("div", "bot-head");
+        head.append(el("span", "name", "Fiberly"));
+        card.append(head);
+        return card;
+      }
 
-        addTurn(fibreLog, "You", message);
-        const out = addTurn(fibreLog, "Fiberly", "provjeravam...");
+      function render(card, response, seconds) {
+        const head = card.querySelector(".bot-head");
+        const [label, cls] = OUTCOMES[response.outcome] ?? [response.outcome, "off"];
+        head.append(el("span", `badge ${cls}`, label), el("span", "time", `${seconds.toFixed(1)} s`));
+        card.querySelector(".typing")?.remove();
+        for (const text of response.answer.split(/\n\s*\n/)) {
+          const lines = text.split("\n").filter((line) => line.trim());
+          const block = el("section", "block");
+          lines.filter((line) => !isIdLine(line)).forEach((line, n) => {
+            const place = n === 0 && line.match(/^([^:?.!]{3,60}):\s+(.+)$/);
+            const p = el("p");
+            if (place && /\d/.test(place[1])) {
+              block.append(el("h3", "place", place[1]));
+              p.innerHTML = highlight(place[2][0].toUpperCase() + place[2].slice(1));
+            } else p.innerHTML = highlight(line);
+            block.append(p);
+          });
+          lines.filter(isIdLine).forEach((line) => block.append(record(line, response.buildings.find((b) => b.summary_line === line.trim()))));
+          card.append(block);
+        }
+        if (response.next_step && !response.answer.includes(response.next_step)) {
+          const next = el("div", "next");
+          next.append(el("span", null, "Sljedeći korak"), document.createTextNode(response.next_step));
+          card.append(next);
+        }
+        if (response.sources.length) {
+          const sources = el("div", "sources", "Izvori:");
+          response.sources.forEach((id) => sources.append(el("code", null, id)));
+          card.append(sources);
+        }
+      }
+
+      // The endpoint has no memory: this array is the whole conversation, sent with every message.
+      let source = "records", history = [], busy = false;
+      const thread = $("thread"), main = $("main"), input = $("input"), welcome = $("welcome");
+      const scroll = () => main.scrollTo({ top: main.scrollHeight, behavior: "smooth" });
+
+      function reset() {
+        history = [];
+        thread.replaceChildren(welcome);
+        $("chips").replaceChildren(...SOURCES[source].examples.map((text) => {
+          const chip = el("button", "chip", text);
+          chip.type = "button";
+          chip.onclick = () => send(text);
+          return chip;
+        }));
+        input.focus();
+      }
+
+      for (const [key, { label, title }] of Object.entries(SOURCES)) {
+        const button = el("button", key === source ? "on" : "", label);
+        button.type = "button";
+        button.title = title;
+        button.onclick = () => {
+          source = key;
+          document.querySelectorAll("#switch button").forEach((b) => b.classList.toggle("on", b === button));
+          reset();
+        };
+        $("switch").append(button);
+      }
+      $("reset").onclick = reset;
+
+      async function send(message) {
+        message = message.trim();
+        if (!message || busy) return;
+        busy = true;
+        $("send").disabled = true;
+        input.value = "";
+        input.style.height = "";
+        welcome.remove();
+        thread.append(el("div", "msg user", message));
+        const card = botCard();
+        const typing = el("div", "typing");
+        typing.append(el("span"), el("span"), el("span"));
+        card.append(typing);
+        thread.append(card);
+        scroll();
+        const started = performance.now();
         try {
-          const result = await client.predict("/answer_fibre_question", { message, history: fibreHistory });
-          const response = JSON.parse(result.data[0]);
-          out.parentElement.querySelector(".who").textContent = `Fiberly (${OUTCOMES[response.outcome] ?? response.outcome}):`;
-          out.textContent = response.answer;
-          fibreHistory.push({ role: "user", content: message });
-          fibreHistory.push({ role: "assistant", content: response.answer });
+          const response = await ask(SOURCES[source].api, message, history);
+          render(card, response, (performance.now() - started) / 1000);
+          history.push({ role: "user", content: message }, { role: "assistant", content: response.answer });
         } catch (err) {
-          out.textContent = `Zahtjev nije prošao: ${err.message ?? err}`;
+          render(card, { outcome: "error", answer: `Zahtjev nije prošao: ${err.message ?? err}`, buildings: [], sources: [] }, (performance.now() - started) / 1000);
         }
-        fibreLog.scrollTop = fibreLog.scrollHeight;
+        busy = false;
+        $("send").disabled = false;
+        scroll();
+        input.focus();
+      }
+
+      $("form").addEventListener("submit", (e) => { e.preventDefault(); send(input.value); });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value); }
       });
+      input.addEventListener("input", () => { input.style.height = ""; input.style.height = input.scrollHeight + "px"; });
 
-      // The general chat, as it was.
-      const chatLog = document.getElementById("chat-log");
-      const chatInput = document.getElementById("chat-input");
-      const chatHistory = [];
-
-      document.getElementById("chat-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const message = chatInput.value.trim();
-        if (!message || !client) return;
-        chatInput.value = "";
-
-        addTurn(chatLog, "You", message);
-        const out = addTurn(chatLog, "Assistant", "");
-
-        // submit() streams; each event carries the reply so far.
-        let reply = "";
-        const job = client.submit("/chat", { message, history: chatHistory });
-        for await (const event of job) {
-          if (event.type === "data") {
-            reply = event.data[0];
-            out.textContent = reply;
-            chatLog.scrollTop = chatLog.scrollHeight;
-          }
-        }
-
-        chatHistory.push({ role: "user", content: message });
-        chatHistory.push({ role: "assistant", content: reply });
+      fetch("/health").then((r) => r.json()).then(({ model }) => {
+        $("dot").className = "dot ok";
+        $("dot").title = `spojeno · ${model}`;
+      }).catch(() => {
+        $("dot").className = "dot bad";
+        $("dot").title = "poslužitelj se ne javlja";
       });
+      reset();
     </script>
   </body>
 </html>
