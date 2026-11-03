@@ -826,6 +826,7 @@ def _(mo):
     tell them apart?
 
     **Answer:**
+    For "provjeri adm 2003917" a right answer in other words is "Ima optike, uključenje je za otprilike 11 dana" where the record says "Optika je dostupna, oko 11 dana", and a right-words answer without checking is the same sentence about a building Fiberly never looked up, or with the wrong ID. A keyword check on "dostupna" fails the first and passes the second; what tells them apart is `cites_gold`, which reads the record IDs in `sources`, and the Sonnet judge, which passes the paraphrase and caught all 40 wrong IDs in my generated rows.
 
     ---
     ## Task 5 — Make the user a model
@@ -1042,6 +1043,7 @@ def _(mo):
     callout?
 
     **Answer:**
+    I would put pass^5 in the SLA, because an operator asks the same kind of question many times a day and the customer hears only one answer, so a scenario has to pass five runs in a row, not on average. One scripted run plus five model-user runs of my three scenarios cost $0.0277 (measured), so price is not the limit: the scripted user runs every scenario on every commit, and the five model-user repeats run nightly, because the model user still broke character once on the refusal and I don't want that in the gate that blocks a change.
 
     ---
     # Conclusion: what became the library

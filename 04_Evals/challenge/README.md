@@ -734,3 +734,13 @@ challenge, which carries the full detail.
 
 Everything after this week assumes your app has a number, an interval, and a
 saved run to be measured against.
+
+---
+
+## Bring it to work
+
+**The system:** Fiberly itself. Once it is finished, the people who work with these answers check it: AMs, PMs, project managers and technicians. They give feedback on the answers the AI gives, and where it gives too much or too little, that specific information is expanded or cut on their word.
+
+- **Data:** Fiberly's answers, judged by those AMs, PMs, project managers and technicians. Their pass or fail, and their "too much" or "too little", take the place of my twenty hand scores, so the judge is checked against the people who use the answers.
+- **Model or endpoint:** Claude Sonnet 5.5 judges, as in this week's run, and Claude Haiku 5.5 answers. One `run.py` makes 235 judge calls, 2.05 s and about $0.0022 a call, $0.52 a run, against $0.02 for Fiberly's own calls (*measured*).
+- **Access or approval:** none needed. The data is generated at random and invented, so nothing real is sent anywhere.
