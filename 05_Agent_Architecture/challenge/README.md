@@ -638,3 +638,13 @@ challenge, which has the full detail.
 
 Everything after this week assumes you chose your architecture with a
 measurement and can say what would change it.
+
+---
+
+## Bring it to work
+
+**The capability:** Fiberly's read-only building lookups, the building register, FIS, AAMS and the contact matrix through Trino and Pagesnap straight from MySQL. The plan at work is to put them in an MCP server on Google Cloud, so that the central agent platform can call them through the internal API gateway. Today they have one caller, Fiberly's own pipeline, and the gateway is not ready yet, so that server would be exactly the first pattern of this week: an MCP server for one caller. It waits until the gateway is ready, the server is registered on it and an agent on the platform calls it.
+
+- **Data:** in the pilot a request fetches about 1.0 KB at the median and 2.8 KB at p90, the largest single answer is 6.6 KB, and 69 of 107 requests made seven reads. At that size the pipeline spends 1,088 tokens on a plain check and 3,341 on a question about two buildings, against 3,907 and 6,564 through MCP (*measured*, Step 5). Above about 1.7 KB an answer the pipeline's specific questions cost more than the agent's, so that is the size to watch.
+- **Model or endpoint:** there is no lookup API to describe. Trino speaks HTTP, but it runs SQL, so a manifest over it would hand the model a query engine instead of a lookup, and the server is the part that has to exist. It would read through a read-only service account that belongs to our team. Behind the gateway the server sees the calling application, not the operator, so who asked has to be logged on the platform's side.
+- **Access or approval:** where the server runs on Google Cloud is not decided yet; DevOps will most likely set it up, and that is the first conversation. Gateway access is approved per source, by the owner of each application, system or database the server reads, so registering it means one approval from each owner of the register, FIS, AAMS, the contact matrix and Pagesnap, plus our service account limited to read access on the tables Fiberly reads.

@@ -7,4 +7,6 @@ dependencies = [
     "gradio>=6.0",
     "litellm>=1.90",
     "rank-bm25>=0.2.2",
+    "trino>=0.333",   # FIBERLY_SOURCE=databases: the register and the warehouse, through Trino
+    "pymysql>=1.1",   # and Pagesnap, straight from MySQL
 ]

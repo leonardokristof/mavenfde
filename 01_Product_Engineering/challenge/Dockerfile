@@ -19,7 +19,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv export --frozen --no-dev --no-emit-project -o requirements.txt \
  && uv pip install --system --no-cache -r requirements.txt
 
-COPY llm.py app.py schema.py fiberly.py records.py sample_data.json ./
+COPY llm.py app.py schema.py fiberly.py records.py systems.py sample_data.json ./
 COPY frontend/ ./frontend/
 
 # Don't run as root. Your security review will ask about this.
@@ -31,6 +31,9 @@ EXPOSE 7860
 # The records are mounted at run time, never copied in, the same rule as the key:
 #   docker run -v <path>/synthetic_sonnet.jsonl:/data/corpus.jsonl:ro ...
 ENV CORPUS_PATH=/data/corpus.jsonl
+# Or from the systems themselves, the Week 5 containers, by joining their network:
+#   docker run --network databases_default -e FIBERLY_SOURCE=databases -e TRINO_HOST=trino -e TRINO_PORT=8080 \
+#     -e PAGESNAP_HOST=mysql -e PAGESNAP_PORT=3306 ...
 
 # The API key is NOT baked into this image. It arrives at runtime via
 # environment variable. Never COPY a .env file into a container image --

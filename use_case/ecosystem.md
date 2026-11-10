@@ -115,6 +115,14 @@ At work the shipped technique needs no embedding model, no vector database and n
 
 ---
 
+## Week 5 · agent architecture
+
+Personal laptop, *measured* on 10 November: the systems Fiberly reads run locally as three containers with invented data, PostgreSQL for the building register and the warehouse, MySQL for Pagesnap, and Trino in front of PostgreSQL, as at work. At rest they hold about 1.3 GiB for Trino, 490 MB for MySQL and 40 MB for PostgreSQL; Trino reached its 2 GiB cap under a burst of thousands of lookups and slowed down. The app image needs only the two database drivers and `systems.py` on top of Week 3, and reaches the containers over their Docker network. The MCP server I built and did not ship starts in 0.63 s and holds 55 MB as its own process.
+
+At work the lookups would read through a read-only service account that belongs to our team. Where a server would run on Google Cloud is not decided yet, and DevOps will most likely set it up. Access through the internal API gateway is approved per source, by the owner of each application, system or database a server reads, so an MCP server over Fiberly's lookups needs one approval from each owner of the register, FIS, AAMS, the contact matrix and Pagesnap. To settle for Week 9: what the shared Trino allows one service account, and whether the gateway passes on the operator or only the calling app.
+
+---
+
 ## Week 9 — the full checklist
 
 <!--

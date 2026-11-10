@@ -7,6 +7,7 @@ who to escalate to. Sentences and rules come from the pilot's response template.
 """
 
 import json
+import os
 import re
 import time
 import unicodedata
@@ -390,6 +391,9 @@ def _house_after(head: str, street: str) -> tuple[str, str] | None:
 
 
 def _records_for(lookup: dict) -> list[dict]:
+    if os.getenv("FIBERLY_SOURCE") == "databases":
+        import systems
+        return systems.records_for(lookup)
     if lookup.get("type") in ("adm", "aams"):
         return records.by_number(str(lookup.get("number", "")).strip())
     house = _split_number(str(lookup.get("house_number", "")))
@@ -429,14 +433,15 @@ def solve_from_records(request: Request, usage: dict | None = None) -> Response:
                     missing.append(_not_found(lookup))
             found = found[:4]
             context = "\n\n".join(r["output"] for r in found)
-            usage["chars"] = len(context)
+            evidence = "\n\n".join(r.get("context", r["output"]) for r in found)
+            usage["chars"] = len(evidence)
             if not found:
                 response = Response(outcome="not_found", answer=" ".join(missing))
             elif parsed.get("focus") != "specific" and all(r["axes"]["intent"] == PLAIN_CHECK for r in found):
                 response = Response(outcome="answered", answer="\n\n".join([context, *missing]), sources=[r["id"] for r in found])
             else:
                 conversation = "\n".join(f"{t['role']}: {t['content']}" for t in turns)
-                text = ask_model(RECORDS_PROMPT, [{"role": "user", "content": f"Razgovor:\n{conversation}\n\nZapisi:\n{context}"}])
+                text = ask_model(RECORDS_PROMPT, [{"role": "user", "content": f"Razgovor:\n{conversation}\n\nZapisi:\n{evidence}"}])
                 is_ids = re.compile(r"\s*(ADM|AAMS) ID:").match
                 text = "\n".join(line for line in text.splitlines() if line.strip() and not is_ids(line))
                 ids = [line for r in found for line in r["output"].splitlines()[1:] if is_ids(line)]

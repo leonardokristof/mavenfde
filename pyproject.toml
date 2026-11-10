@@ -81,6 +81,15 @@ week5 = [
     "fastmcp>=4.1",               # S10 -- the capability as an MCP server, and its client
 ]
 
+# Fiberly's own systems, rebuilt locally for TC5: uv sync --inexact --group fiberly
+fiberly = [
+    "trino>=0.333",               # the warehouse and the register, through Trino as at work
+    "pymysql>=1.1",               # Pagesnap, read directly from MySQL as at work
+    "psycopg[binary]>=3.2",       # loading the mock data, and the request log
+    "fastmcp>=4.1",
+    "rank-bm25>=0.2.2",
+]
+
 # ---------------------------------------------------------------------------
 # torch wheels: CPU by default, and that is a real choice, not a limitation.
 #

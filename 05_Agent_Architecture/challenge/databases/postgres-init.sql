@@ -1,0 +1,3 @@
+CREATE DATABASE dwh;
+CREATE DATABASE register;
+CREATE DATABASE requests_log;

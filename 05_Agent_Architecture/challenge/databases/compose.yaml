@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment: {POSTGRES_USER: fiberly, POSTGRES_PASSWORD: local-mock-only}
+    volumes: [./postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro]
+    ports: ["5433:5432"]
+    mem_limit: 512m
+  mysql:
+    image: mysql:8.4
+    environment: {MYSQL_ROOT_PASSWORD: local-mock-only, MYSQL_DATABASE: pagesnap, MYSQL_USER: fiberly, MYSQL_PASSWORD: local-mock-only}
+    ports: ["3307:3306"]
+    mem_limit: 768m
+  trino:
+    image: trinodb/trino:latest
+    volumes: [./trino/catalog:/etc/trino/catalog:ro]
+    ports: ["8085:8080"]
+    mem_limit: 2g
+    depends_on: [postgres]
