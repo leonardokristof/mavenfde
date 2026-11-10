@@ -283,3 +283,92 @@ things pull the wrong chunk. Before switching anything, I would label ten real q
 retrieval against DCI, with the source named in every answer. The documents stay where they are. The
 answer model is Sonnet 5.5 or Haiku 5.5, chosen by the same pass rate against cost per question. The
 change goes to the system's owners in the group as a ticket for their approval.
+
+## After the review
+
+The review on 3 November asked for four things. This is what I did, measured on 9 November.
+
+**1. The switch condition, counted.** My decision row said I would put ranked search into the address step
+when more than one question in five carries no ID and no full address. My own profile put follow-ups without
+an identifier at about 20%, so it was not clear whether I was already there. I read the 107 pilot questions,
+in their 65 conversations, and labelled each one:
+
+| Kind | Questions |
+| --- | --- |
+| An ADM ID, an AAMS number or a request number | 50 |
+| A full address: street, house number and city | 29 |
+| A follow-up about the building named earlier ("koja je kartica", "ima li otvorenih kartica za tu adresu?") | 12 |
+| A reply to a question back: a city, or "ADM ID" after a bare number | 5 |
+| No building at all: what the tool can do, a test message | 5 |
+| Part of an address, finished after one question back | 4 |
+| A whole network instead of a building | 1 |
+| A building, with no ID or full address even with the conversation: a street with no house number | 1 |
+
+The rule now in the row: a message counts only if neither it nor the conversation before it gives an ID or a
+full address. A follow-up and a reply to a question back don't count, because the parse step merges them with
+the earlier turns and the lookup is exact again. That leaves **1 of 107**. Read message by message, without the
+conversation, it would be 28 of 107, 26%, over the line. The rule holds only while the follow-up labels keep
+passing, and the row says that too. The 20% in the profile was the 21 later turns with no identifier, and the
+profile now splits them. The pilot questions stay in the private repo. Only these counts are here.
+
+**2. Follow-ups in the labels.** The fifteen labels held one follow-up, q09. I added five more in the pilot's
+shapes, with invented values on records from the corpus, because the real questions can't be published. q16
+asks for the ADM after a request check, q17 "koja je kartica" after an ADM check, q18 "ima li otvorenih
+kartica za tu adresu?" after an address, q19 gives a city as the reply to a question back, and q20 gives "ADM ID"
+as the reply to a bare number.
+
+**3. A question that needs two systems.** q21 is a pilot question, "koji su detalji realizacije, ima li
+ispunjen uvjet i je li privod gotov?", on a building where the field tracker and the coverage forecast
+disagree. The field data wins, as the datasheet says, and the answer has to name both. In Week 4 the model had
+already shortened one of these to the field data alone, so code now adds the record's sentence with both sides
+to every answer to a specific question, the same way it adds the ID line. Measured on q21 and the Week 4 case,
+3 runs each, both sides were named in 6 of 6, and in 1 of the 6 only because of the added sentence. q22 is a
+pasted list of two IDs, the one label with two gold records. `cited` in `measure.py` now needs every gold
+record, and it also fails when the pipeline cites a record outside the gold. The second half came from the
+next finding.
+
+**A bug the new labels found.** q19 (Ribarska 4, Pula) brought back a second building, Ribarska 18. Its first
+line ends with the project MINI_FTTH_PULA_4, and the address check took the house number from anywhere in the
+line. It also accepted the street as any part of a word. I looked up each of the 1,288 records that start with
+an address by its own address, and 7 also returned another street or house number ("Morska" found "Primorska",
+"Nova" found "Maslinova", "Slavonska" found the city Slavonski Brod). The check now wants the house number right
+after the street and the street's name at the start of a word, and 0 of 1,288 do. None of the first fifteen
+labels hit it, and the old `cited` would have passed it, because the right record was there too.
+
+**Results**, 22 questions × 4 approaches × 3 runs, 9 November:
+
+| Approach | Pass | Cited the records | Calls | Evidence chars | Latency | $ per question | $ total |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Agentic RAG (BM25) | 60/66 | 60/60 | 2.1 | 2,768 | 3.3 s | $0.00052 | $0.0343 |
+| DCI Wiki | 61/66 | 60/60 | 3.6 | 13,375 | 4.6 s | $0.00223 | $0.1473 |
+| Hybrid RAG (BM25 + dense) | 46/66 | 42/60 | 2.7 | 3,131 | 4.2 s | $0.00068 | $0.0447 |
+| **Pipeline**, the Step 4 endpoint | **66/66** | 60/60 | 1.0 | 283 | 2.1 s | **$0.00025** | $0.0164 |
+
+| Question | Agentic RAG | DCI Wiki | Hybrid RAG | Pipeline |
+| --- | --- | --- | --- | --- |
+| q16 ADM after a request | 3/3 | 3/3 | 3/3 | 3/3 |
+| q17 "koja je kartica" | 3/3 | 3/3 | 2/3 | 3/3 |
+| q18 open requests at "that address" | 3/3 | 3/3 | 3/3 | 3/3 |
+| q19 the city after a question back | 3/3 | 3/3 | 3/3 | 3/3 |
+| q20 "ADM ID" after a bare number | 3/3 | 3/3 | **0/3** | 3/3 |
+| q21 field against network | 3/3 | 3/3 | 3/3 | 3/3 |
+| q22 two IDs | 3/3 | 3/3 | **0/3** | 3/3 |
+
+The run cost **$0.2418**: 1,816,663 tokens in and 120,319 out on Haiku. The pipeline row is its own run
+afterwards on the final code, with the conflict sentence, which cost $0.0164. Three labels were fixed after reading
+the traces, and the same saved answers were scored again. As in Step 3, each was a keyword problem in an answer
+that was right. q19 and q20 wanted "pula" and "čakovec", and the answers wrote "u Puli" and "u Čakovcu", so they
+now ask for the stems. q21 wanted "mrež", and one answer wrote "sustav još pokazuje HOMES PASSED - STREET", so it
+now asks for the network's status itself.
+
+**What it changes:**
+- **The pipeline stays.** It passes all 66 and every follow-up, at under half of BM25 RAG's price, and the
+  condition for ranked search is at 1 of 107, and it would fire at 22.
+- **Follow-ups are not where the agents lose either.** On the six follow-up labels (q09, q16 to q20) BM25 RAG and
+  DCI pass 18 of 18. The hybrid passes 13, and it fails the bare numbers again for the reason it failed q03: the
+  dense half pushes the exact match out.
+- **The answers can no longer hide a disagreement between systems**, and a lookup by address can no longer bring a
+  second building along. Both are the failure the business owner said they would not catch, since they would not
+  check the source.
+- **The Week 4 harness reads these labels too**, so its next run has 85 cases instead of 78, and the baseline is
+  saved again then.

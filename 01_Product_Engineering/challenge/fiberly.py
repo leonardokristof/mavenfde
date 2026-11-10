@@ -120,6 +120,7 @@ You get the conversation and the records found for what the operator typed. Answ
 - Don't write the line with the IDs and the status (ADM ID: ... | Status: ...). It is added after your answer, word for word from the record.
 - Plain text only: no markdown and no record IDs."""
 PLAIN_CHECK = "a general check of the building"
+CONFLICT = "the field data and the network status disagree; the field data is newer and wins"
 
 
 def _plain(text: str) -> str:
@@ -369,14 +370,21 @@ def _mentions(text: str, name: str) -> bool:
     return bool(q) and q[: max(5, len(q) - 3)] in _plain(text)
 
 
+def _house_after(head: str, street: str) -> tuple[str, str] | None:
+    """The house number written right after the street, whose name has to start a word."""
+    q = _plain(street)
+    m = re.search(rf"(?:^| ){re.escape(q[: max(5, len(q) - 3)])}\S{{0,3}} (\d+[a-z]?)(?: (\d+[a-z]?|[a-z])\b)?", _plain(head))
+    return _split_number(f"{m[1]}/{m[2] or ''}") if q and m else None
+
+
 def _records_for(lookup: dict) -> list[dict]:
     if lookup.get("type") in ("adm", "aams"):
         return records.by_number(str(lookup.get("number", "")).strip())
-    house = set(records.tokenize(str(lookup.get("house_number", ""))))
+    house = _split_number(str(lookup.get("house_number", "")))
     query = " ".join(str(lookup.get(key, "")) for key in ("street", "house_number", "city"))
     heads = [(r, r["output"].split("\n")[0].split(":")[0]) for r in records.search(query, 20)]
-    return [r for r, head in heads if house and house <= set(records.tokenize(head))
-            and _mentions(head, lookup.get("street", "")) and _mentions(head, lookup.get("city", ""))][:4]
+    return [r for r, head in heads if house[0] and _house_after(head, lookup.get("street", "")) == house
+            and _mentions(head, lookup.get("city", ""))][:4]
 
 
 def solve_from_records(request: Request, usage: dict | None = None) -> Response:
@@ -420,7 +428,10 @@ def solve_from_records(request: Request, usage: dict | None = None) -> Response:
                 is_ids = re.compile(r"\s*(ADM|AAMS) ID:").match
                 text = "\n".join(line for line in text.splitlines() if line.strip() and not is_ids(line))
                 ids = [line for r in found for line in r["output"].splitlines()[1:] if is_ids(line)]
-                response = Response(outcome="answered", answer="\n".join(filter(None, [text, *ids, *missing])),
+                # The model shortened a field-against-network conflict to the winner in Week 4, so code shows both sides.
+                field = [next((s for s in re.split(r"(?<=\.)\s+(?=[A-ZČĆŽŠĐ])", r["output"].split("\n")[0]) if "teren" in _plain(s)), "")
+                         for r in found if r["axes"]["record"] == CONFLICT]
+                response = Response(outcome="answered", answer="\n".join(filter(None, [text, *field, *ids, *missing])),
                                     sources=[r["id"] for r in found])
     except Exception as exc:
         print(f"fiberly records: error {type(exc).__name__}: {exc}", flush=True)

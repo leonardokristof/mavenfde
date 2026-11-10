@@ -102,7 +102,8 @@ def score(case, result):
         passed = any(m in answer for m in DECLINE_MARKERS) and not any(t.lower() in answer for t in case["expected_terms"])
     else:
         passed = all(t.lower() in answer for t in case["expected_terms"])
-    return {"pass": passed, "cited": any(g in result.get("sources", answer) for g in case["gold"]) if case["gold"] else None,
+    cited = all(g in result.get("sources", answer) for g in case["gold"]) and not set(result.get("sources") or []) - set(case["gold"])
+    return {"pass": passed, "cited": cited if case["gold"] else None,
             "calls": len(result["trace"]), "evidence_chars": result["evidence_chars"], "latency_s": round(result["latency_s"], 2),
             "stopped": result["stopped"], "tokens_in": result["tokens"][0], "tokens_out": result["tokens"][1], "usd": result["usd"]}
 
