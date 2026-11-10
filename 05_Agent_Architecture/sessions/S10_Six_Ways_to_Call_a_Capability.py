@@ -792,6 +792,7 @@ def _(mo):
     above would a user of your app meet first?
 
     **Answer:**
+    Fiberly has no tool loop: the model only turns the operator's message into JSON and code does the lookups, so there is no tool name to get wrong, but the same failures show up inside that JSON, and the endpoint catches every exception instead of raising. If the JSON does not parse or the model call times out, the operator gets "Trenutno imam tehnički problem, probaj ponovno za par minuta." and the model is never told, so there is no second try; a lookup type or field the model invents is worse, because the endpoint then says that a building which exists is not in the system ("ADM None nije evidentiran u sustavu" when it writes "id" instead of "number"). The row an operator would meet first is "the tool itself raises", as a model call that times out (once in my last eval run), but the one I would fix first is the silent wrong answer, by checking the parsed JSON against the schema and sending what was wrong back to the parse step once.
 
     ---
     ## ✅ Task 2: Way 2, a skill, and Way 3, a subagent
@@ -1114,6 +1115,7 @@ def _(mo):
     you that a tool does not?
 
     **Answer:**
+    The named client is the group's central agent platform, the same internal AI platform whose plain RAG I described in my retrieval write-up (I can't name it in a public repo): my manager has set the plan for its agents to call Fiberly's read-only lookups as an MCP server through the company API gateway, so a client I don't write has to discover them, which is exactly what MCP is for. What I still have to settle is the credential: the gateway's public documentation says that in its default mode it replaces the caller's token with its own, so the server would see the calling app and not the operator, and I have yet to confirm that for our installation. If that plan were dropped the honest answer would be nobody, and an MCP server would buy Fiberly nothing but a process to run and keep alive, because the operators' web app is the only caller.
 
     ---
     ## ✅ Task 4: Way 5, Code Mode, and Way 6, an API that already exists
@@ -1569,6 +1571,7 @@ def _(mo):
     above and say which architecture's token bill you are actually paying.
 
     **Answer:**
+    One record in our corpus, which is what the endpoint returns per lookup, is 266 bytes at the median and 349 at p90 (598 at most, over 2,075 records), and the pipeline makes one lookup per request in that record store; the pilot it replaces fetches more, about 1.0 KB per request at the median and 2.8 KB at p90, over seven read calls in 69 of 107 runs, with 6.6 KB the biggest single call. On the sweep our record sits between the 118-byte and 900-byte rows, close to the first, and a pilot request carries about as much as four of our records, where the tool loop measured 1,780 to 3,504 tokens for four lookups, so we pay the tool-loop bill and it is still small. Code Mode lost at every size in the notebook (3,104 to 8,029 tokens) only because Haiku's programs use isinstance, which the runner does not allow; once allowed, 6 of 6 programs ran first time at a flat 1,841 to 1,864 tokens, so at our size it costs about the same as the tool loop and only pulls ahead at pilot size, which does not pay for a sandbox.
 
     ---
     ## ✅ Task 6: The comparison, and Sofia's page for the board
@@ -1666,6 +1669,7 @@ def _(mo):
     passing — under which you would switch to it?
 
     **Answer:**
+    Question 1 is no: at work the data sits in databases behind Trino, and although Trino speaks HTTP it runs whatever SQL it is sent, so describing it with UTCP would hand the model a SQL endpoint instead of read-only lookups by key, and no service answers "look up this building" over HTTP today. Question 2 is the first yes, because my manager's plan has the group's central agent platform call the read-only lookups through the company API gateway, so the alternative worth building is an MCP server over those lookups; Code Mode came third, because at our response size it costs about the same as the tool loop and it needs a sandbox. I keep the pipeline for the operators' app and move the lookups behind MCP the day the platform team registers the server on the gateway and an agent there calls it in a test; until then the app is the only caller, and the server would be a process with nobody on the other end.
 
     ---
     ## 🏗️ By the End of the Sesh
