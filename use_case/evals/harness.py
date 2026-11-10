@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -7,6 +8,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "01_Product_Engineering" / "challenge")]
 import records  # noqa: E402
+
+RECORDS = {r["id"]: r for r in records.load_records()}
 
 # The fifty corpus rows read for failures.md, in the order they were read.
 TRACE_IDS = """
@@ -42,9 +45,8 @@ def load_cases() -> list[dict]:
                   "expected_terms": q["expected_terms"], "must_decline": q.get("must_decline", False),
                   "outcome": {"clarify": "needs_clarification"}.get(q["kind"], "answered" if q["gold"] else "not_found")}
                  for q in _jsonl("retrieval.jsonl")]
-    rows = {r["id"]: r for r in records.load_records()}
-    traces = [{"input": rows[i]["input"], "output": rows[i]["output"], "outcome": rows[i]["outcome"], "endpoint": "records",
-               "refuse": rows[i]["axes"]["intent"] in REFUSE, "conflict": rows[i]["axes"]["record"] == CONFLICT}
+    traces = [{"input": RECORDS[i]["input"], "output": RECORDS[i]["output"], "outcome": RECORDS[i]["outcome"], "endpoint": "records",
+               "refuse": RECORDS[i]["axes"]["intent"] in REFUSE, "conflict": RECORDS[i]["axes"]["record"] == CONFLICT}
               for i in TRACE_IDS]
     return goldens + questions + traces
 
@@ -88,6 +90,25 @@ def both_sources(actual: str, case: dict) -> float:
     return float("teren" in text and "mrez" in text)
 
 
+# The Week 4 review: every fact the answer states matches the record it cites, or the right answer when it
+# cites none. The IDs it names, fibre where the status is HOMES CONNECTED, and a project where the record
+# names one. It catches line 5 in any wording and "nema optike" next to HOMES CONNECTED, which the judge passes.
+NO_FIBRE = re.compile(r"\bnema (ni )?optik|\boptika nije dostupna|\boptike nema")
+NO_PROJECT = re.compile(r"\bnema (ni )?projekta\b|\bprojekta nema\b|\bbez projekta\b|\bprojekt ne postoji")
+NAMED = re.compile(r"\b(?:adm|aams)(?: id)? (\d{4,9})\b")
+
+
+def fields_match(actual: str, case: dict) -> float:
+    response = _response(actual)
+    facts = "\n".join(RECORDS[i]["output"] for i in response.get("sources") or [] if i in RECORDS) or case.get("output") or ""
+    if not facts:
+        return 1.0
+    text = _text(actual)
+    no_fibre = "Status: HOMES CONNECTED" in facts and NO_FIBRE.search(text)
+    no_project = re.search(r"Naziv projekta: (FTTH|EUBB)_", facts) and NO_PROJECT.search(text)
+    return float(all(n in facts for n in NAMED.findall(text)) and not no_fibre and not no_project)
+
+
 # Not a failures.md line: none of the fifty answered from the wrong record. These two keep the
 # Week 3 retrieval labels in the run, with the same pass check the Week 3 measurement used.
 def answers_question(actual: str, case: dict) -> float:
@@ -107,7 +128,7 @@ def cites_gold(actual: str, case: dict) -> float:
 
 
 SCORERS = {"outcome": outcome, "explains_refusal": explains_refusal, "must_not": must_not, "both_sources": both_sources,
-           "answers_question": answers_question, "cites_gold": cites_gold}
+           "fields_match": fields_match, "answers_question": answers_question, "cites_gold": cites_gold}
 # A scorer with a flag here only judges the cases that carry it, so its column is averaged over those.
 ONLY = {"explains_refusal": "refuse", "both_sources": "conflict", "answers_question": "expected_terms", "cites_gold": "gold",
         "same_action": "output"}

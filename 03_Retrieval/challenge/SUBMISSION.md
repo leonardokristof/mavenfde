@@ -370,5 +370,6 @@ now asks for the network's status itself.
 - **The answers can no longer hide a disagreement between systems**, and a lookup by address can no longer bring a
   second building along. Both are the failure the business owner said they would not catch, since they would not
   check the source.
-- **The Week 4 harness reads these labels too**, so its next run has 85 cases instead of 78, and the baseline is
-  saved again then.
+- **The Week 4 harness reads these labels too.** With three refusal goldens from the Week 4 review it has 88 cases
+  instead of 78, and the baseline was saved again on 9 November ("After the review" in the
+  [Week 4 submission](../../04_Evals/challenge/SUBMISSION.md)).

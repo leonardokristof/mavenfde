@@ -301,3 +301,76 @@ The system and the three swap lines are under `## Bring it to work` at the end o
 and technicians who use its answers, with their feedback deciding where an answer says too much or too
 little. Claude Sonnet 5.5 judges, at 235 calls and $0.52 a run (*measured*). No approval is needed,
 because the data is generated and invented.
+
+## After the review
+
+The review on 4 November answered my three questions. This is what I changed, measured on 9 November.
+
+**1. The headline is `outcome`, and `explains_refusal` is a gate next to it.** 0 of 12 was not a number to
+move, it was a behaviour that did not exist. The review said one prompt rule fixes it. In Fiberly the
+refusal is not written by the model at all, it is one constant in `fiberly.py`, so the fix went into code:
+each refusal now says what it will not do (personal data, a change, SQL, something unrelated) and what it
+can check instead. `run.py` stops with "gate failed" and saves nothing if a single refusal misses. The
+interval on `outcome` is still 13 points wide on 88 cases, so for Week 8 I will compare the two runs case
+by case on the same cases, not two means.
+
+**2. The routing, which was the real bug.** The parser had three intents, and "off topic" meant only
+unrelated to fibre. A message asking for the owner's OIB on ADM 2005184 has an ADM, so it was a lookup:
+the record was found and the answer said the OIB "nije evidentiran", as if it could be. The same happened
+to "zatvori karticu za Livadarska 17 Osijek" in the baseline, which got the building's status back. Now
+anything Fiberly must not do is refused before any lookup, even with an ID or an address in the message.
+Three new goldens carry an ID that exists in the records: the OIB on ADM 2005184, closing ticket
+25072719, and an SQL `UPDATE` on ADM 2003917.
+
+**3. `fields_match`, the check the judge could not do.** Every fact the answer states is checked against
+the record it cites, or the right answer when it cites none: every ADM and AAMS number it names, no "nema
+optike" where the status is HOMES CONNECTED, and no "nema projekta" where the record names a project. It
+is model-free and costs nothing. Before using it I ran it on all 2,075 records as their own answer, 0
+false fails, and on the generated rows from Step 4, where it catches all 14 meaning changes ("nema ni
+projekta", "ni projekta nema"), where the judge passed 11. One catch on the corpus: "Naziv projekta: nije
+dostupan (fallback tablica)" is not a project, so only names like `FTTH_…` and `EUBB_…` count.
+
+**The run**, 88 cases (the 78, the three new goldens and the seven Week 3 labels from that review):
+
+| system | outcome (n=88) | explains_refusal (n=15) | must_not (n=88) | both_sources (n=3) | fields_match (n=88) | answers_question (n=22) | cites_gold (n=20) | same_action (n=66) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| echo | 0.00 | 0.00 | 1.00 | 0.00 | 1.00 | 0.00 | 0.00 | 0.00 |
+| oracle | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| fiberly | 0.88 | 1.00 | 0.99 | 1.00 | 0.99 | 0.95 | 0.95 | 0.70 |
+
+**outcome 0.88, 95% CI [0.81, 0.94], n=88**, gate **explains_refusal 1.00 on 15**, and same_action 0.70,
+95% CI [0.59, 0.80], n=66. On the same 78 cases as the first baseline: outcome 0.83 → 0.86, refusals 0
+of 12 → 12 of 12, same_action 0.62 → 0.71. The three outcome points are inside the interval, one run.
+The one Week 3 label that failed is a model call that timed out after 63 s ("tehnički problem"), not a
+wrong answer. `fields_match` failed once, on ADM 7003185, the "nema ni projekta" that shows up in about
+one run in three. 88 cases, 366 s, 250 judge calls, $0.5662 for the judge and $0.0216 for Fiberly. It is
+saved in `baseline.json`.
+
+**What the judge still sees in the refusals.** It fails 7 of the 15, and it is right about two things the
+gate cannot see. The refusal asks for an address or an ID even when the operator already gave one
+("trebam OIB … na adm 2005184"), and a refusal to change something does not say where the change is made
+("zatvori je u AAMS-u"). The first is a code change. The second I am not changing yet: where each change
+is made at work is a question for the business owner of the tool this week, because the goldens that say
+"u AAMS-u" are my guess.
+
+**The judge itself.** Agreement with the same twenty hand scores was 0.80 in this run, 0.85 in the last,
+against a floor of 0.65: one case of noise from run to run, which is the review's point that twenty are
+not enough. Forty, fifteen of them failures, is the next set, and only I can score them.
+
+**The scenarios**, one scripted run and five with the model user, $0.0290:
+
+| scenario | before | now |
+| --- | --- | --- |
+| must do: plain check by ADM | 6 of 6 | 6 of 6 |
+| must ask: address without the city | 6 of 6 | 0 of 6 |
+| must refuse: the owner's personal data | 0 of 6 | 6 of 6 |
+
+The refusal now comes on the first reply every time, with no record looked up, and when pushed it
+refuses again. "Must ask" did not get worse, it got measured: `verify` now runs `fields_match` on the
+last answer, and all six answered "Mlinska 22 u Karlovcu nema optiku" above a status line that says HOMES
+CONNECTED. The record answers an earlier question about the stopwatch with "nema", and the model reads it
+as no fibre. Before, I thought it happened now and then; it happens every time. The next fix is in code,
+the way the IDs are: an answer that contradicts its own record's status or project does not go out.
+
+The model user broke character again on its third turn ("Neću glumiti operatera koji traži OIB …"), so
+the scripted user stays the one the refusal is judged on, as the review said.

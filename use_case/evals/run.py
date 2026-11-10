@@ -15,7 +15,9 @@ from fiberly import solve, solve_from_records  # noqa: E402
 from schema import Request  # noqa: E402
 
 BASELINE = ROOT / "use_case" / "evals" / "baseline.json"
-HEADLINE = "explains_refusal"
+HEADLINE = "outcome"
+# The Week 4 review: a refusal that does not say why is a bug, not a number to move, so it allows no misses.
+GATES = ("explains_refusal",)
 
 # I want every run priced in dollars, so this adds up what litellm says each model call cost, per model.
 spent = collections.Counter()
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     print(f"\nFiberly run: {run.n} cases, {run.errors} errors, {run.seconds:.0f} s")
     print(f"Judge: {judge.stats}")
     print("Spent: " + ", ".join(f"{model} ${usd:.4f}" for model, usd in spent.items()))
-    for label in (HEADLINE, "outcome", "same_action"):
+    for label in (HEADLINE, *GATES, "same_action"):
         if label not in scorers:
             continue
         mean, low, high = bootstrap_ci(scores(run, label))
@@ -81,6 +83,9 @@ if __name__ == "__main__":
         if missed:
             print(f"  case {r.index}: {', '.join(missed)} | {r.input[:60]!r}")
 
+    failed = [label for label in GATES if min(scores(run, label)) < 1]
+    if failed:
+        sys.exit(f"\ngate failed: {', '.join(failed)}, nothing saved")
     if "--save" in sys.argv:
         harness.save(run, BASELINE)
         print(f"\nsaved {BASELINE.relative_to(ROOT)}")
