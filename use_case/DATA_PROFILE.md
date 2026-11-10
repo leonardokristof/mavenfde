@@ -67,6 +67,9 @@ Expected load: about 50 to 100 operator questions per working day (estimate).
 
 - **How the operator asks** (pilot sample, n=107): building ID ~40%, free-text address ~34%,
   follow-up without an identifier ~20%, request ID ~6%, bare number with no label ~1%.
+  Of the 21 follow-ups, 12 ask about the building named earlier in the conversation and 5 answer
+  a question back (a city, "ADM ID"). The other 4 are an address without a city, a street
+  without a house number, a whole network, and a question about what the tool can do.
 - **How messy the input is:** typos ("dostupnosr", "osijk"), no diacritics, all caps, missing
   city, postal code and county pasted in, house number suffixes, Croatian grammatical cases of
   street names, colloquial words for a request (ticket, card, order).

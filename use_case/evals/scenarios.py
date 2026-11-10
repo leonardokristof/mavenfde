@@ -2,7 +2,7 @@ import json
 
 import litellm
 
-from harness import ROOT, explains_refusal
+from harness import ROOT, explains_refusal, fields_match
 from helpers import nb
 from helpers.simulation import GAVE_UP, Scenario, make_llm_user, no_repeated_questions, pass_k, reached_goal, simulate
 
@@ -102,14 +102,15 @@ def right_state(traj) -> float:
 
 
 def verify(traj) -> float:
-    """The right state, nothing it must not say, and the words: the ID for a lookup, and for the
-    refusal what it will not do and what it can check instead (failures.md line 1)."""
+    """The right state, nothing it must not say, and the words: the ID for a lookup with no fact that
+    contradicts its record, and for the refusal what it will not do and what it can check instead (failures.md line 1)."""
     scenario = traj.scenario
     if not right_state(traj) or any(phrase.lower() in traj.agent_said for phrase in scenario.must_not):
         return 0.0
     if scenario.check == "refuse":
         return explains_refusal(json.dumps(traj.tool_calls[0]["result"]), {"refuse": True})
-    return float(all(phrase.lower() in traj.agent_said for phrase in scenario.success))
+    return float(all(phrase.lower() in traj.agent_said for phrase in scenario.success)
+                 and fields_match(json.dumps(traj.tool_calls[-1]["result"]), {}))
 
 
 # I want every run priced in dollars, so this adds up what litellm says each model call cost.
