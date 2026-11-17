@@ -1,0 +1,6 @@
+# Fiberly's ladder as it ships. The input rails I measured and did not ship are in use_case/decisions.md,
+# with the reason for each. No model block: the one rail that ships calls no model.
+rails:
+  output:
+    flows:
+      - facts check output

@@ -22,7 +22,7 @@ def _trino():
 @cache
 def _pagesnap():
     return pymysql.connect(host=os.getenv("PAGESNAP_HOST", "127.0.0.1"), port=int(os.getenv("PAGESNAP_PORT", "3307")),
-                           user="fiberly", password=os.getenv("PAGESNAP_PASSWORD", "local-mock-only"),
+                           user=os.getenv("PAGESNAP_USER", "fiberly_ro"), password=os.getenv("PAGESNAP_PASSWORD", "local-mock-only"),
                            database="pagesnap", autocommit=True, cursorclass=pymysql.cursors.DictCursor)
 
 

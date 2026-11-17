@@ -1,0 +1,5 @@
+define subflow facts check output
+  $allowed = execute check_facts(text=$bot_message, records=$records)
+  if not $allowed
+    bot refuse to respond
+    stop

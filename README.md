@@ -7,8 +7,9 @@
 > | 1 · Product engineering | ✅ submitted | [Submission](01_Product_Engineering/challenge/SUBMISSION.md) · [Charter](use_case/CHARTER.md) · [Goldens](use_case/evals/golden.jsonl) · [Video](https://github.com/leonardokristof/mavenfde/releases/tag/week-1) |
 > | 2 · Open weights | ✅ submitted, Step 6 review after 23 October | [Submission](02_Open_Weights/challenge/SUBMISSION.md) · [Datasheet](use_case/data/DATASHEET.md) · [Axes](02_Open_Weights/challenge/generate.py) · [Decisions](use_case/decisions.md) |
 > | 3 · Retrieval | ✅ submitted | [Submission](03_Retrieval/challenge/SUBMISSION.md) · [Endpoint](01_Product_Engineering/challenge/app.py) · [Labels](use_case/evals/retrieval.jsonl) · [Decisions](use_case/decisions.md) |
-> | 4 · Evals | ✅ submitted, Step 7 rehearsal on 13 November | [Submission](04_Evals/challenge/SUBMISSION.md) · [Harness](use_case/evals/run.py) · [Baseline](use_case/evals/baseline.json) · [Failures](use_case/evals/failures.md) |
-> | 5 · Agent architecture | ✅ submitted, Step 7 demo on 13 November | [Submission](05_Agent_Architecture/challenge/SUBMISSION.md) · [MCP server](01_Product_Engineering/challenge/fiberly_mcp.py) · [Measurement](05_Agent_Architecture/challenge/measure.py) · [Decisions](use_case/decisions.md) |
+> | 4 · Evals | ✅ submitted, Step 7 rehearsal postponed: the business owner is on holiday | [Submission](04_Evals/challenge/SUBMISSION.md) · [Harness](use_case/evals/run.py) · [Baseline](use_case/evals/baseline.json) · [Failures](use_case/evals/failures.md) |
+> | 5 · Agent architecture | ✅ submitted, Step 7 demo postponed: the business owner is on holiday | [Submission](05_Agent_Architecture/challenge/SUBMISSION.md) · [MCP server](01_Product_Engineering/challenge/fiberly_mcp.py) · [Measurement](05_Agent_Architecture/challenge/measure.py) · [Decisions](use_case/decisions.md) |
+> | 6 · Guardrails | ✅ submitted, Step 6 postponed: the business owner is on holiday | [Submission](06_Guardrails/challenge/SUBMISSION.md) · [Attacks](use_case/evals/attacks.jsonl) · [Rails](01_Product_Engineering/challenge/guardrails/) · [Ladder](use_case/decisions.md#week-6--the-ladder) |
 
 ---
 
