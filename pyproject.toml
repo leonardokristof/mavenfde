@@ -91,6 +91,7 @@ fiberly = [
     "psycopg[binary]>=3.2",       # loading the mock data, and the request log
     "fastmcp>=4.1",
     "rank-bm25>=0.2.2",
+    "nemoguardrails>=0.24",       # TC6 -- the output rail every answer passes
 ]
 
 # ---------------------------------------------------------------------------

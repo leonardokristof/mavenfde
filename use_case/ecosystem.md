@@ -123,6 +123,26 @@ At work the lookups would read through a read-only service account that belongs 
 
 ---
 
+## Week 6 · guardrails
+
+**Who can write to what Fiberly reads.** Everything below reaches the model as text, so each line is a door.
+
+| Source | What Fiberly reads from it | Who writes there | Door |
+| --- | --- | --- | --- |
+| The operator's message | the question, and whatever is pasted into it | Operators. They paste customer e-mails and ticket text ("RE: korisnik čeka" in the corpus), so a customer writes into it at one remove | Direct, and indirect through pasting |
+| Pagesnap | field progress, technicians' notes, the contractor | Technicians in the field. TODO(confirm): whether contractors' own staff write the notes directly | Indirect. The only free-text notes Fiberly reads, and written furthest from our team, so this was the door I poisoned first (i01 to i09) |
+| AAMS | requests, tasks, deadlines | Sales channels open requests; the people working a request move its task. TODO(confirm): whether any AAMS field Fiberly reads is free text | Indirect |
+| Building register, FIS, contact matrix | address, fibre status, project, contact roles | Internal teams that own each system. TODO(confirm): who exactly | Indirect, but structured fields, so an instruction has nowhere long to live |
+| Tool descriptions, at work | what each lookup does and when to call it | The teams that own each source system, who publish their MCP servers on the central gateway that Fiberly will read through | Tool description, closed today: Fiberly's pipeline hands the model no tools. It opens the day a model chooses which of their tools to call |
+
+**Level 0 without logits.** Fiberly runs on a closed API: Claude Haiku 5.5 through my key for the invented data, and at work Claude Sonnet 5.5 on the company's Azure. No logit access on either, so constrained decoding in the Session 12 sense does not exist for me. The provider's structured output does: the parser's reply now goes out with a JSON schema in strict mode, and every field it returns is a closed set or a value code checks against what the operator typed (*measured*: Haiku 5.5 and qwen2.5:7b through Ollama both return only schema-valid JSON through the same LiteLLM call). TODO(confirm): whether the company's Azure deployment of Claude accepts the same `response_format`.
+
+**What the guardrail adds to the deployment**, *measured* on 17 November. NeMo Guardrails 0.24.1 grows the image from 840 MB to 945 MB. The rail that ships calls no model and no embedding, and it runs in the container with `--network none`. In that test LiteLLM tried to fetch its price list from GitHub at start and fell back to its local copy, one more call out to account for in Week 9. The classifier rung I measured and did not ship needs a 240 MB multilingual embedding model from Hugging Face on first use; nothing in the image needs it.
+
+**Where the attacks go.** Attack-shaped text went only to qwen2.5:7b on this laptop through Ollama. `attacks.py` stops unless `INJECTION_API_BASE` is localhost, and asserts the app is pointed at it before the first attack. At work the same tests need a local model or a gateway approved for adversarial testing, never the production tenant. TODO(confirm): whether HT has such a gateway.
+
+---
+
 ## Week 9 — the full checklist
 
 <!--

@@ -158,9 +158,27 @@ def load(tables: dict[str, list[dict]]) -> None:
         conn.execute(LOG_DDL)
 
 
+# Week 6, Level 4: what I ask each system's owner for is an account that can read and nothing else. Seeding keeps
+# the owner's account; Fiberly, Trino's catalogs and the MCP server read through this one.
+READ_ONLY = "fiberly_ro"
+
+
+def grant_read_only() -> None:
+    for database in ("register", "dwh"):
+        with psycopg.connect(PG.format(database), autocommit=True) as conn:
+            if not conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (READ_ONLY,)).fetchone():
+                conn.execute(f"CREATE ROLE {READ_ONLY} LOGIN PASSWORD 'local-mock-only'")
+            for schema in {name.split(".")[0] for name in DDL if (name.startswith("adm.")) == (database == "register")}:
+                conn.execute(f"GRANT USAGE ON SCHEMA {schema} TO {READ_ONLY}; GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO {READ_ONLY}")
+    with pymysql.connect(**{**MYSQL, "user": "root"}, autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute(f"CREATE USER IF NOT EXISTS '{READ_ONLY}'@'%' IDENTIFIED BY 'local-mock-only'")
+        cur.execute(f"GRANT SELECT ON pagesnap.* TO '{READ_ONLY}'@'%'")
+
+
 if __name__ == "__main__":
     tables = build([json.loads(line) for line in CORPUS.read_text(encoding="utf-8").splitlines()])
     load(tables)
+    grant_read_only()
     for name, rows in tables.items():
         print(f"{name:24} {len(rows):5} rows")
     summaries = sum(1 for t in ("fis.forecast", "aams.requests") for r in tables[t] if r["summary"])

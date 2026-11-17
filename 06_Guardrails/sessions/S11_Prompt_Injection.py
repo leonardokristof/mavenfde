@@ -532,6 +532,7 @@ def _(mo):
     at all. Yours is the first line of the challenge.
 
     **Answer:**
+    Nothing in my system prompt is secret: there are no codes, keys or internal URLs in it, and Fiberly is used by about 40 colleagues on our internal network, so a leaked prompt would cost us nothing. What must never happen is a behaviour: Fiberly's answer must never contain a fact that is not in the building's record, for example a status, contact or ID that came from an instruction hidden in a record's note. Operators act on what Fiberly tells them, so a wrong fact is the real damage, not a leaked prompt.
 
     ---
     ## ✅ Task 2: Attack by hand, then search
@@ -935,6 +936,16 @@ def _(mo):
     entry on your list would you poison first, and why?
 
     **Answer:**
+    Untrusted text reaches the model in these places:
+
+    - the operator's message, written by about 40 colleagues who sometimes paste a customer's email or ticket, so the customer writes there too;
+    - AAMS request summaries and tasks, written by whoever opens or works the request, including the web and partner channels;
+    - Pagesnap field reports, written by field technicians and contractor crews;
+    - Pagesnap project pages, written by project managers;
+    - FIS forecast summaries, written by network planning;
+    - ADM addresses and the contacts matrix, kept by the teams that own them.
+
+    Error messages never get there, because code turns them into one fixed sentence. Tool descriptions won't either, because code calls the lookups, not the model. I'd poison a field report first: the most people outside my team write there, my code lets field data win when it disagrees with the network status, and the records prompt tells the model to keep each sentence as written. Nothing secret can leak, so the damage would be an operator telling a customer a wrong date or status because of one note.
     """)
     return
 
@@ -1126,6 +1137,7 @@ def _(mo):
     for, and it is the fix the challenge asks you to prove.
 
     **Answer:**
+    Never putting secrets in the prompt is the one that removes the risk, but my prompts hold no secret, so what I can lose is a true answer. Tomorrow I can move the facts out of the model's reach: dates, deadlines, statuses and contacts get written by code from the record's fields, the way plain checks and the ID line already are, so the model only picks which fact was asked for. It still has to read the operator's question and the free-text notes to pick, so my output check is that every date, number and contact in the answer is in the records it was given, even when the operator insists on a deadline the record doesn't have.
 
     ---
     ## ✅ Task 5: The two doors that bypass the chat box
@@ -1367,6 +1379,7 @@ def _(mo):
     and the regression test is the attack that proves it is gone.
 
     **Answer:**
+    Today my app has one leg in full: untrusted content, because the model reads field reports and request notes that people outside my team write. The private data leg is thin, since the model only sees the records the operator asked for and could open themselves, and the way out is only plain text to an internal operator, with no tools and no rendered links. The cheapest one to close is the way out: a code check that lets an answer leave only when its dates, numbers and contacts are in the records, and the regression test is a poisoned field note that tells the model to promise a date.
 
     ---
     ## 🏗️ By the End of the Sesh

@@ -56,14 +56,17 @@ def count_tokens(message: str, history: list[dict] | None = None) -> int:
     return token_counter(model=MODEL, messages=build_messages(message, history))
 
 
-def complete(system: str, messages: list[dict], max_tokens: int = 2000) -> tuple[str, dict]:
-    """One call without streaming. Returns the text, the token counts the provider reported and the price in $."""
+def complete(system: str, messages: list[dict], max_tokens: int = 2000, schema: dict | None = None) -> tuple[str, dict]:
+    """One call without streaming. Returns the text, the token counts the provider reported and the price in $.
+    With a schema the provider can only return JSON that fits it (Anthropic structured output, Ollama's format)."""
     kwargs = {
         "model": MODEL,
         "messages": [{"role": "system", "content": system}, *messages],
         "max_tokens": max_tokens,
         "timeout": 60,
     }
+    if schema:
+        kwargs["response_format"] = {"type": "json_schema", "json_schema": {"name": "reply", "schema": schema, "strict": True}}
     if API_BASE:
         kwargs["api_base"] = API_BASE
     if EXTRA_HEADERS:

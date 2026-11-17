@@ -988,6 +988,7 @@ dev = [
 ]
 fiberly = [
     { name = "fastmcp" },
+    { name = "nemoguardrails" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pymysql" },
     { name = "rank-bm25" },
@@ -1046,6 +1047,7 @@ dev = [
 ]
 fiberly = [
     { name = "fastmcp", specifier = ">=4.1" },
+    { name = "nemoguardrails", specifier = ">=0.24" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pymysql", specifier = ">=1.1" },
     { name = "rank-bm25", specifier = ">=0.2.2" },

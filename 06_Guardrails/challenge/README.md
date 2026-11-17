@@ -687,3 +687,11 @@ challenge, which carries the full detail.
 
 From here on, your app has been attacked by you, has a test that proves the
 hole stays closed, and has a written position on every rung it does not run.
+
+## Bring it to work
+
+**The system:** the fault voice bot my team builds. A customer calls about a fault on their service, the bot talks to them, and between its turns a workflow we write by hand, step by step, calls tools that fetch data from the systems behind that service, so the bot can understand what was found and explain it. What the caller says is text the model reads that nobody at HT wrote, and nobody has yet tried what happens when a caller talks to the model instead of answering the bot. That testing is the next piece of work for me and my team.
+
+- **Data:** the knowledge bases of the general fault-resolution processes, written inside HT, and the datasets the tools fetch from the systems for the customer's service. Two things reach the model that someone outside the team writes: the caller's words, and any free-text field in a fetched dataset, which is the door that landed here as an indirect attack. TODO(confirm): whether the fetched records hold the customer's personal data.
+- **Model or endpoint:** the bot already runs on structured output, so Level 0 exists for every step whose reply is a closed set, through the provider's structured output the way Fiberly's parser now uses it. TODO(confirm): whether we have logit access on the model the bot runs on. The false-positive count to carry over is the output rail's: it refused 0 of 2,075 records and 1 of 48 hosted answers, and that one was a real error (*measured*). The input rungs refused real requests: rules 7 of the 15 corpus rows that carry a real question, and the classifier 491 of 2,045 operator messages (*measured*). Structured output has a count too: Fiberly's closed-set parse refused 1 of 85 hosted requests the old parse answered (*measured*, 3 of 3 on a re-run).
+- **Access or approval:** none for the testing itself. The voice bots belong to my team, and I will run these tests on them. What needs settling is where attack traffic goes: a local model, as here, or a gateway approved for adversarial testing, never the production tenant. TODO(confirm): whether HT has such a gateway.
