@@ -67,11 +67,14 @@ rubric's list, answered.
 
 ## Step 2: the second way
 
-**MCP.** The first ordering question is no: no service answers "look up this building" over HTTP. Trino
-speaks HTTP, but it runs whatever SQL it is sent, so a UTCP manifest over it would hand the model a SQL
-engine instead of a lookup. The second is the first yes: my manager's plan has the group's central
-agent platform call Fiberly's lookups through the internal API gateway, so a client I do not write has to
-discover them, which is what MCP is for.
+**MCP, from the client's side.** At work the teams that own the source systems are going to expose them
+as MCP servers on the company's central MCP gateway, and Fiberly will read its data through that gateway
+instead of going to Trino and MySQL. The first ordering question is no: no service answers "look up this
+building" over HTTP today, and Trino speaks HTTP but runs whatever SQL it is sent, so a UTCP manifest over
+it would hand the model a SQL engine instead of a lookup. The second is no for Fiberly itself, because
+nothing outside the operators' app calls it, but it is yes for the data under it: Fiberly is the client
+that has to discover tools other teams write. So the second way is Fiberly reading over MCP, with an
+agent deciding what to call, against the pipeline deciding in code.
 
 **The closest alternative I did not pick: Code Mode.** A request makes several calls, which is its
 question, but each answer is small, and it needs a sandbox for untrusted code that I do not have. In
@@ -80,7 +83,8 @@ Session 10 it stayed flat at about 1,850 tokens once Haiku's programs were allow
 ## Step 3: the build
 
 [`fiberly_mcp.py`](../../01_Product_Engineering/challenge/fiberly_mcp.py) serves the seven lookups as
-tools over stdio, and their docstrings are the descriptions the model reads. The server logs every
+tools over stdio, standing in for the servers the system owners will publish, and their docstrings are
+the descriptions the model reads. The server logs every
 call in its own process, hides the SQL and the host when a query fails, and caps an answer at 60 KB.
 The agent in [`measure.py`](./measure.py) is Week 3's agent loop with the same prompt, with every tool
 call going through the MCP client.
@@ -166,11 +170,12 @@ the size of the answers does.
 
 ## Step 6: the decision
 
-The Week 5 row in [`decisions.md`](../../use_case/decisions.md). **The pipeline stays.** MCP is the
-closest reject, built and measured above: slower, four labels worse, and a process with nobody on the
-other end, because the gateway the central platform would call through is not ready. **Switch
-condition:** the gateway ready, the platform team registering the server, and an agent there calling it
-in a test; then the lookups go behind MCP and the server already exists. The open question is still
+The Week 5 row in [`decisions.md`](../../use_case/decisions.md). **The pipeline stays.** An agent over MCP is
+the closest reject, built and measured above: slower and four labels worse. MCP itself is not rejected,
+because it is how Fiberly's data will arrive; what is rejected is letting a model decide which lookups
+to call. **Switch condition:** the system owners' MCP servers live on the central gateway and our
+service account approved for each; then `systems.py` calls their tools instead of SQL, and the pipeline
+calls them in the same order. An agent takes over only when it matches the pipeline on the labels. The open question is still
 open, because only the business owner can answer it, on Friday.
 
 ## Step 7: the refined demo
@@ -182,7 +187,7 @@ with the three questions in order and then the open one. Their answers go here, 
 
 ## Step 8: bring it to work
 
-Under `## Bring it to work` at the end of the [challenge README](./README.md). In short: Fiberly's
-lookups in an MCP server on Google Cloud for the central agent platform, which today would be a server
-for one caller. It would read through our team's read-only service account, DevOps would most likely
-run it, and each source's owner approves its access through the gateway.
+Under `## Bring it to work` at the end of the [challenge README](./README.md). In short: Fiberly
+reading the register, FIS, AAMS, the contact matrix and Pagesnap as MCP tools their owners publish on
+the central gateway, through our team's read-only service account, with each owner approving its own
+source. Where Fiberly runs on Google Cloud is not decided yet; DevOps will most likely set it up.
