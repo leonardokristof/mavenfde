@@ -84,7 +84,7 @@ def run(phase: str, ids: set, runs: int) -> None:
             entry.update(result, control_leaked=control_hits, model=llm.MODEL, date=str(date.today()))
         else:
             entry.update(after_runs=result["runs"], after_leaked=result["leaked"], after_outcomes=result["outcomes"],
-                         after_sample=result["sample"], after_control_leaked=control_hits)
+                         after_sample=result["sample"])
         print(f"{entry['id']} {phase}: leaked {result['leaked']}/{runs}, control {control_hits}, {result['outcomes']}", flush=True)
         save(entries)
 
