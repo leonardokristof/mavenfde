@@ -86,7 +86,7 @@ with three questions, the first one asked before I say where the false part is.
 
 - The app has no login yet, so the frontend sends no `operator_id`. Its requests are logged with no operator, and `why()` returns them to nobody.
 - Only the records endpoint is logged; the sample endpoint with the nine Week 1 buildings is not.
-- `why()` is a function with tests, not a button. Whether operators get it, or only an audit role, is the business owner's call.
+- `why()` has no endpoint yet, on purpose. An endpoint that takes the operator as an argument would let anyone read another operator's requests, and as an MCP tool any agent could. It waits for the login, the Entra ID sign-in the deployment already plans, so the operator comes from the session, and for an audit role, as the business owner asked.
 
 ## Verified
 
