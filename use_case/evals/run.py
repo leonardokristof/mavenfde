@@ -2,6 +2,8 @@ import collections
 import dataclasses
 import json
 import sys
+import tempfile
+from pathlib import Path
 
 import litellm
 
@@ -15,6 +17,10 @@ CFG = nb.bootstrap(start=ROOT)
 import fiberly  # noqa: E402
 from fiberly import solve, solve_from_records  # noqa: E402
 from schema import Request  # noqa: E402
+import memory  # noqa: E402
+
+# Week 7: eval cases are not operators' requests, so their episodes go to a throwaway file, not the real log.
+fiberly.EPISODES = Path(tempfile.mkdtemp()) / "episodes.db"
 
 BASELINE = ROOT / "use_case" / "evals" / "baseline.json"
 HEADLINE = "outcome"
@@ -106,6 +112,7 @@ if __name__ == "__main__":
         print(f"| {name} | " + " | ".join(f"{sum(scores(report, label)) / len(scores(report, label)):.2f}" for label in scorers) + " |")
 
     run = reports["fiberly"]
+    memory_tests = memory.run()
     print(f"\nFiberly run: {run.n} cases, {run.errors} errors, {run.seconds:.0f} s")
     print(f"Judge: {judge.stats}")
     print("Spent: " + ", ".join(f"{model} ${usd:.4f}" for model, usd in spent.items()))
@@ -127,7 +134,9 @@ if __name__ == "__main__":
         same = {r.input for r in base.results} & {r.input for r in run.results}
         print(f"Against {BASELINE.name} on the {len(same)} cases both runs share:")
         print(harness.compare(shared(base, same), shared(run, same)))
-    failed = [label for label in GATES if min(scores(run, label)) < 1]
+    for name, (passed, detail) in memory_tests.items():
+        print(f"memory {name}: {'pass' if passed else 'FAIL'}, {detail}")
+    failed = [label for label in GATES if min(scores(run, label)) < 1] + [f"memory {name}" for name, (passed, _) in memory_tests.items() if not passed]
     if failed:
         sys.exit(f"\ngate failed: {', '.join(failed)}, nothing saved")
     if "--save" in sys.argv:

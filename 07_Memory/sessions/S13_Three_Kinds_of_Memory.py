@@ -183,6 +183,7 @@ def _(CFG, os):
         api_key=CFG.api_key or os.environ.get("OPENAI_API_KEY", "not-needed"),
         default_headers=llm_kwargs.get("extra_headers"),
         extra_body=llm_kwargs.get("extra_body"),
+        reasoning_effort="none",
         temperature=0, timeout=600, max_retries=2,
     )
 
@@ -557,6 +558,13 @@ def _(mo):
     and what is the subject key?
 
     **Answer:**
+    Fiberly carries almost nothing from one conversation to the next, and I think that is right. Every answer comes from the systems at the moment of the question: the status of a request, the contact, the deadline. If I stored any of that, I would be keeping a copy that goes stale, and an operator would get an old status stated with confidence. That is the worst thing this tool can do.
+
+    The one fact I considered is the region or team an operator works in, so that Fiberly could narrow a search. I would not build it. The business owner told me he cannot confirm that operators repeat it, and that if they do, it should come from the approved user profile, not from something the model remembers. It would add a store, a subject key per operator and a leakage risk, for a saving I have not measured.
+
+    What would actually be worth keeping is events, not facts: which lookup ran, which records came back, and why an answer was refused. That is episodic, and it answers the question "why did Fiberly say that?", which the owner says he would need. Each entry is written by code from what happened, never by the model.
+
+    Of those, the thing that can change is the record behind an episode. A request's status moves, so I would key an episode by the request ID and the version of the record it read, and I would not supersede it. An old episode stays true about what Fiberly saw then, and the log says which version that was. The only thing that supersedes is a live status, and I do not store that.
     """)
     return
 
@@ -907,6 +915,13 @@ def _(mo):
     model's account of itself?
 
     **Answer:**
+    I would test the episodic memory, and the test is the one S13 runs: the explanation has to match the log of what happened, not the model's account of itself.
+
+    Fiberly keeps no such log yet. Everything it would write down is already observed by code during a request: the lookups the parser asked for, the records each one returned, whether the facts rail replaced a sentence, and the token and cost counts. It is gone when the answer is sent. So the first step is to write those events to SQLite, one row per lookup, from the code and never from the model. If I asked the model to describe a refusal, I would be building the audit trail that lies. In S13 it recorded a check no tool made, five times out of five.
+
+    What I would count is not correctness but unsupported claims. For each explanation Fiberly gives ("I refused because the address is not in the building register"), every claim must point at a row: a lookup that ran and what it returned. The test fails when a claim has no row behind it. The business owner asked for exactly these answers: which system the data came from, which record shaped the reply, and why Fiberly could not answer.
+
+    I am not choosing the procedural test. Fiberly's flow is fixed: the parser names the lookups, code runs them, the rail checks the answer. The model never chooses between approaches, so there are no wrong turns to skip. The count would be zero of zero.
     """)
     return
 
@@ -1010,6 +1025,16 @@ def _(mo):
     direction?
 
     **Answer:**
+
+    Yes, Fiberly has many users: the operators who ask about buildings. It does not know who they are today. The endpoint takes a message and the earlier turns, and nothing that names the person, so the first thing memory needs is an identity it can trust.
+
+    The namespace would be ("episodes", operator_id), and inside it one row per request, ordered by time, holding the records as they read at that moment. operator_id comes from the company login, not from anything the operator types, because a typed value could name someone else. The operator's team or region, if it is ever needed, comes from the identity system and not from memory. The business owner asked for access by role, so the same namespace is where that rule would live: an operator reads their own episodes, and a separate audit role reads across them, through a different path.
+
+    For the before and after, I expect memory to move almost nothing, and the reason is by design. Fiberly's answers come from the records at the moment of the question, and the episode log is only read when someone asks why. It never goes into the answer prompt. A wrong remembered fact cannot displace correct reasoning if it never reaches the model that writes the answer. So I expect the outcome score in my eval harness, on the 85 shared cases, to stay where it is, 0.87, with the same confidence interval.
+
+    If any case moved, it would be the ones that already depend on earlier turns: the follow-up questions that merge an answer with what was typed before, and the two cases that are already unstable, the pasted e-mail that now reads as a change and q16, which answered two out of three runs. The direction would be worse, never better, because anything memory adds to those prompts is one more thing that can be wrong. That is why I would run the comparison and report it either way, instead of assuming it.
+
+    The leakage test is two operators asking about the same request. Neither may see the other's episodes, and a "why" question that names a request ID from the other namespace must come back empty.
     """)
     return
 
