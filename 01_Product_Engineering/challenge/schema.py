@@ -35,6 +35,9 @@ class Request(BaseModel):
     session_id: str | None = Field(
         default=None, description="Added by the app, not typed by the operator"
     )
+    operator_id: str | None = Field(
+        default=None, description="Who asked, from the login, not typed by the operator"
+    )
 
 
 class OpenRequest(BaseModel):

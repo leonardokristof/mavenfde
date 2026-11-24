@@ -9,9 +9,10 @@ who to escalate to. Sentences and rules come from the pilot's response template.
 import json
 import os
 import re
+import sqlite3
 import time
 import unicodedata
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from difflib import SequenceMatcher
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from llm import complete
 from schema import Building, OpenRequest, Request, Response
 
 DATA = json.loads((Path(__file__).parent / "sample_data.json").read_text(encoding="utf-8"))
+EPISODES = Path(os.getenv("EPISODES_PATH") or Path(__file__).resolve().parents[2] / "use_case" / "data" / "episodes.db")
 TODAY = date.fromisoformat(DATA["snapshot_date"])  # a snapshot, so deadlines don't move between runs
 STOPWATCH_DAYS = 30
 ADDRESS_CONTACT = "koordinatoru za adresne podatke"
@@ -469,6 +471,7 @@ def solve_from_records(request: Request, usage: dict | None = None) -> Response:
     usage = {} if usage is None else usage
     usage.update({"in": 0, "out": 0, "usd": 0.0, "lookups": 0, "chars": 0})
     started = time.time()
+    parsed, found, stopped = {}, [], ""
 
     def ask_model(system: str, messages: list[dict], schema: dict | None = None) -> str:
         text, used = complete(system, messages, schema=schema)
@@ -512,7 +515,8 @@ def solve_from_records(request: Request, usage: dict | None = None) -> Response:
                 field = [next((s for s in re.split(r"(?<=\.)\s+(?=[A-ZČĆŽŠĐ])", r["output"].split("\n")[0]) if "teren" in _plain(s)), "")
                          for r in found if r["axes"]["record"] == CONFLICT]
                 answer = "\n".join(filter(None, [text, *field, *ids, *missing]))
-                if _stopped(text, evidence, request.message):  # the model's sentence goes; what the records say stays
+                stopped = _stopped(text, evidence, request.message)
+                if stopped:  # the model's sentence goes; what the records say stays
                     answer = "\n\n".join([*(_checked(r, request.message) for r in found), *missing])
                 response = Response(outcome="answered", answer=answer, sources=[r["id"] for r in found])
     except Exception as exc:
@@ -521,4 +525,47 @@ def solve_from_records(request: Request, usage: dict | None = None) -> Response:
 
     print(f"fiberly records: {response.outcome}, sources {response.sources}, {time.time() - started:.1f} s, "
           f"tokens in {usage['in']} out {usage['out']}, ${usage['usd']:.5f}", flush=True)
+    try:
+        _remember(request, parsed, found, response, stopped or ("facts" if UNCHECKED in response.answer else ""), usage, time.time() - started)
+    except sqlite3.Error as exc:
+        print(f"fiberly records: episode not written, {exc}", flush=True)
     return response
+
+
+# Week 7: an episode is what code saw on one request, never the model's account of it. It is true about the moment
+# it was written, so nothing overwrites it, and the live status is always read fresh from the records.
+def _remember(request: Request, parsed: dict, found: list[dict], response: Response, stopped: str, usage: dict, seconds: float) -> None:
+    with sqlite3.connect(EPISODES) as db:
+        db.execute("CREATE TABLE IF NOT EXISTS episodes (time TEXT, operator_id TEXT, message TEXT, lookups TEXT, records TEXT,"
+                   " outcome TEXT, refused TEXT, stopped TEXT, tokens INTEGER, usd REAL, seconds REAL)")
+        db.execute("INSERT INTO episodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                   (datetime.now().isoformat(), request.operator_id, request.message, json.dumps(parsed.get("lookups") or [], ensure_ascii=False),
+                    json.dumps([{"id": r["id"], "output": r["output"]} for r in found], ensure_ascii=False), response.outcome,
+                    parsed.get("refuse") or "", stopped, usage["in"] + usage["out"], usage["usd"], round(seconds, 2)))
+
+
+def why(operator_id: str, at: str = "9999") -> str:
+    """The operator's last request at or before `at`, told from its episode by code, with no model."""
+    with sqlite3.connect(EPISODES) as db:
+        row = db.execute("SELECT time, message, lookups, records, outcome, refused, stopped FROM episodes"
+                         " WHERE operator_id = ? AND time <= ? ORDER BY time DESC LIMIT 1", (operator_id, at)).fetchone()
+    if not row:
+        return ""
+    when, message, lookups, seen, outcome, refused, stopped = row
+    lines = [f'{datetime.fromisoformat(when):%d.%m.%Y. u %H:%M} pitao si: "{message}".']
+    if outcome in ("out_of_scope", "needs_clarification"):
+        lines.append(f"U sustavima nisam ništa tražio{f', odbio sam: {refused}' if refused else ''}.")
+    for lookup in json.loads(lookups):
+        place = f"{lookup['type'].upper()} {lookup['number']}" if lookup["type"] != "address" else \
+            f"adresu {lookup['street']} {lookup['house_number']}, {lookup['city']}"
+        lines.append(f"Tražio sam {place}.")
+    seen = json.loads(seen)
+    if lookups != "[]" and not seen:
+        lines.append("Nijedan zapis nije pronađen.")
+    for record in seen:
+        rows = [line.strip() for line in record["output"].splitlines() if re.match(r"\s*(ADM|AAMS) ID:", line)]
+        lines.append(f"Zapis {record['id']} je tada glasio: {' '.join(rows or record['output'].splitlines()[:1])}")
+    if stopped:
+        lines.append("Provjera činjenica nije pustila tekst koji zapis ne potvrđuje.")
+    lines.append(f"Ishod: {outcome}.")
+    return "\n".join(lines)
